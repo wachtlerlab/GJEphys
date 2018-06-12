@@ -1,6 +1,6 @@
-from GJEMS.ephys.rawDataAnalyse import RawDataAnalyser
-from GJEMS.ephys.NEOFuncs import downSampleAnalogSignal, sliceAnalogSignal
-from GJEMS.ephys.doubleExpFitting import runManyDoubleExpFittings
+from GJEphys.rawDataAnalyse import RawDataAnalyser
+from GJEphys.NEOFuncs import downSampleAnalogSignal, sliceAnalogSignal
+from GJEphys.doubleExpFitting import runManyDoubleExpFittings
 from scipy.signal import lfilter, kaiserord, firwin
 import numpy as np
 from neo import AnalogSignal

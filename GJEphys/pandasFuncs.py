@@ -1,9 +1,13 @@
+'''
+This file contains functions for transforming pandas.DataFrames in certain specific ways.
+'''
+
 import pandas as pd
 
 
 def dfCorr(data, x, ys, func, outLabels, hue=None):
     '''
-    Applies func(y, x) for y in ys. func must return an iterable of the same size as outLabels.
+    Applies func(y, x) for each y in ys. func must return an iterable of the same size as outLabels.
     Returns the results as a DataFrame with ys as indexes and outLabels as columns. If hue is not None, the analysis is
     done for each y grouped on the hue. In this case, columns would be multiindexed with the hue on the higher level and
     outLabels at the lower.
@@ -50,8 +54,8 @@ def getLevelUniques(df, level):
 
 def dfInterHueFunc(data, pars, hue, func, outLabels, kwargsDict={}):
     '''
-    Splits each column in pars into series depending on hue values. Applies func with these series as argument.
-    Return the return values of func in columns with labels in outLabels
+    Splits each column named in pars into series' depending on hue values. Applies func with these series as argument.
+    Compiles and returns the results as a dataframe with pars as index names and outLabels as column names.
     :param data: pandas dataframe
     :param pars: iterable strings, valid labels of columns of data
     :param hue: string, valid label of a column of data. The column with 'class labels'

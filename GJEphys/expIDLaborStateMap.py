@@ -1,3 +1,7 @@
+'''
+Contains a convenience function for obtaining the labor state of DL-Int-1 experiments used in analyses.
+'''
+
 m = {
     '130313-4Rh':   'Forager',
     '130322-1LY':   'Forager',
@@ -18,7 +22,11 @@ m = {
     }
 
 def expIDLaborStateMap(expName):
-
+    '''
+    Returns "Forager" or "Newly Emerged", the labor state of the experiment ID contained in expName
+    :param expName: string, experiment ID
+    :return:
+    '''
     if expName in m:
         return m[expName]
     else:

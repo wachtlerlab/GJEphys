@@ -1,3 +1,7 @@
+'''
+This files contains some helper functions useful when working with NEO objects.
+'''
+
 import numpy as np
 from neo import AnalogSignal
 import quantities as pq

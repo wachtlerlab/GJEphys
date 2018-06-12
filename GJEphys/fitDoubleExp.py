@@ -1,3 +1,7 @@
+'''
+Legacy file from fitting double exponentials to response base line
+'''
+
 import numpy as np
 from scipy.optimize import least_squares
 import sys

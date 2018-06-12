@@ -1,3 +1,19 @@
+'''
+This file contains functions to extract scalar features from eletrophysiological responses of DL-Int-1. All of them
+have the same set of following input arguments:
+:param resp:  neo.analogsignal, containing a response trace starting 3s before stimulus application and ending 3s
+after stimulus application. The times of this trace need to be adjusted so that time at stimulus application is 0.
+:param spikes: neo.spiketrain, containing the spikes corresponding to the interval of "resp" above. The spike times need
+to be adjusted so that stimulus application is at time 0.
+:param xBest: not relevant, legacy from double exponential curve fitting of response baseline.
+See GJEphys/fitDoubleExp.py.
+:param xData: not relevant, legacy from double exponential curve fitting of response baseline.
+See GJEphys/fitDoubleExp.py.
+:param expUnits: quantities.unitquantity.UnitQuantity, expected units for the quantity (Eg: quantities.Hz)
+
+Not all inputs are used by each function. Those that are not used are indicated in documentation strings.
+'''
+
 import numpy as np
 import quantities as qu
 from GJEphys.NEOFuncs import getSpikeRateIn, simpleFloat, getSpikeAmps
@@ -5,7 +21,15 @@ from GJEphys.doubleExpFitting import doubleExpFun
 
 
 def spontAct1Sec(resp, spikes, xBest, xData, expUnits=qu.Hz):
-
+    '''
+    Calculates the spike rate during the 1s interval preceding stimulus application
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantities.Quantity
+    '''
     spikeRate = getSpikeRateIn(spikes, intervalStart=-1 * qu.s, intervalEnd=0 * qu.s)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
@@ -13,7 +37,15 @@ def spontAct1Sec(resp, spikes, xBest, xData, expUnits=qu.Hz):
     return spikeRate
 
 def spontAct3Sec(resp, spikes, xBest, xData, expUnits=qu.Hz):
-
+    '''
+    Calculates the spike rate during the 3s interval preceding stimulus application
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantities.Quantity
+    '''
     spikeRate = getSpikeRateIn(spikes, intervalStart=-3 * qu.s, intervalEnd=0 * qu.s)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
@@ -21,7 +53,15 @@ def spontAct3Sec(resp, spikes, xBest, xData, expUnits=qu.Hz):
     return spikeRate
 
 def initSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
-
+    '''
+    Calculates the spike rate during interval [0, 75)ms of stimulus application
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     spikeRate = getSpikeRateIn(spikes, intervalStart=0 * qu.s, intervalEnd=75 * qu.ms)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
@@ -30,6 +70,15 @@ def initSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
 
 
 def laterSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
+    '''
+    Calculates the spike rate during interval [75, 1000)ms of stimulus application
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     spikeRate = getSpikeRateIn(spikes, intervalStart=75 * qu.ms, intervalEnd=1 * qu.s)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
@@ -37,6 +86,15 @@ def laterSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     return spikeRate
 
 def totalSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
+    '''
+    Calculates the spike rate during interval [0, 1000)ms of stimulus application
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     spikeRate = getSpikeRateIn(spikes, intervalStart=0 * qu.ms, intervalEnd=1 * qu.s)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
@@ -44,6 +102,15 @@ def totalSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     return spikeRate
 
 def reboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
+    '''
+    Calculates the spike rate during interval [0, 50)ms following the end of stimulus application
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     spikeRate = getSpikeRateIn(spikes, intervalStart=1 * qu.s, intervalEnd=1.05 * qu.s)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
@@ -51,6 +118,15 @@ def reboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     return spikeRate
 
 def afterReboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
+    '''
+    Calculates the spike rate during interval [50, 2000)ms following the end of stimulus application
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     spikeRate = getSpikeRateIn(spikes, intervalStart=1.05 * qu.s, intervalEnd=2.00 * qu.s)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
@@ -59,7 +135,15 @@ def afterReboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
 
 
 def maxExciNormed(resp, spikes, xBest, xData, expUnits=qu.dimensionless):
-
+    '''
+    Legacy function from double fitting of response baseline.
+    :param resp: see file documentation above
+    :param spikes: see file documentation above
+    :param xBest: see file documentation above
+    :param xData: see file documentation above
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     if len(spikes) == 0 or any(np.isnan(xBest)):
         return np.nan
     else:
@@ -72,7 +156,15 @@ def maxExciNormed(resp, spikes, xBest, xData, expUnits=qu.dimensionless):
 
 
 def maxInhiNormed(resp, spikes, xBest, xData, expUnits=qu.dimensionless):
-
+    '''
+    Legacy function from double fitting of response baseline.
+    :param resp: see file documentation above
+    :param spikes: see file documentation above
+    :param xBest: see file documentation above
+    :param xData: see file documentation above
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     if len(spikes) == 0 or any(np.isnan(xBest)):
         return np.nan
     else:
@@ -84,6 +176,15 @@ def maxInhiNormed(resp, spikes, xBest, xData, expUnits=qu.dimensionless):
         return inhiSig.max() / avgSpikeHeight
 
 def offsetNormed(resp, spikes, xBest, xData, expUnits=qu.dimensionless):
+    '''
+    Legacy function from double fitting of response baseline.
+    :param resp: see file documentation above
+    :param spikes: see file documentation above
+    :param xBest: see file documentation above
+    :param xData: see file documentation above
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     if len(spikes) == 0 or any(np.isnan(xBest)):
         return np.nan
     else:
@@ -92,7 +193,15 @@ def offsetNormed(resp, spikes, xBest, xData, expUnits=qu.dimensionless):
         return offset / avgSpikeHeight
 
 def inhiReleaseAt(resp, spikes, xBest, xData, expUnits=qu.ms):
-
+    '''
+    Legacy function from double fitting of response baseline.
+    :param resp: see file documentation above
+    :param spikes: see file documentation above
+    :param xBest: see file documentation above
+    :param xData: see file documentation above
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     if any(np.isnan(xBest)):
         return np.nan
     else:
@@ -102,6 +211,15 @@ def inhiReleaseAt(resp, spikes, xBest, xData, expUnits=qu.ms):
         return inhiRelease
 
 def exciInhiRatio(resp, spikes, xBest, xData, expUnits=qu.dimensionless):
+    '''
+    Legacy function from double fitting of response baseline.
+    :param resp: see file documentation above
+    :param spikes: see file documentation above
+    :param xBest: see file documentation above
+    :param xData: see file documentation above
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     if any(np.isnan(xBest)):
         return np.nan
     else:
@@ -112,7 +230,15 @@ def exciInhiRatio(resp, spikes, xBest, xData, expUnits=qu.dimensionless):
         return exciSig.max() / inhiSig.max()
 
 def firstSpikeLatency(resp, spikes, xBest, xData, expUnits=qu.ms):
-
+    '''
+    Calculates the time interval from stimulus application to the first spike of the response
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     initSpikes = spikes[(spikes > 0) & (spikes < 75 * qu.ms)]
     initSpikes.sort()
 
@@ -124,6 +250,15 @@ def firstSpikeLatency(resp, spikes, xBest, xData, expUnits=qu.ms):
         return np.nan
 
 def secondSpikeBISI(resp, spikes, xBest, xData, expUnits=qu.ms):
+    '''
+    Calculates the time interval between the first and second spikes of the response
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     initSpikes = spikes[(spikes > 0) & (spikes < 75 * qu.ms)]
     initSpikes.sort()
 
@@ -136,6 +271,15 @@ def secondSpikeBISI(resp, spikes, xBest, xData, expUnits=qu.ms):
 
 
 def thirdSpikeBISI(resp, spikes, xBest, xData, expUnits=qu.ms):
+    '''
+    Calculates the time interval between the second and third spikes of the response
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     initSpikes = spikes[(spikes > 0) & (spikes < 75 * qu.ms)]
     initSpikes.sort()
 
@@ -147,6 +291,15 @@ def thirdSpikeBISI(resp, spikes, xBest, xData, expUnits=qu.ms):
         return np.nan
 
 def fourthSpikeBISI(resp, spikes, xBest, xData, expUnits=qu.ms):
+    '''
+    Calculates the time interval between the third and fourth spikes of the response
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
     initSpikes = spikes[(spikes > 0) & (spikes < 75 * qu.ms)]
     initSpikes.sort()
 

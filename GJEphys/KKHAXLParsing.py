@@ -1,3 +1,7 @@
+'''
+Contains functions for processing metadata in excel file.
+'''
+
 import os
 import numpy as np
 import pandas as pd
@@ -7,6 +11,14 @@ import logging
 #***********************************************************************************************************************
 
 def smrFilesPresent(expNames, smrDir):
+    '''
+    For every Experiment ID in expNames, checks whether a corresponding SMR file is present in "smrDir" and returns a
+    list of same size as "expNames" containing Trues and False, True is present, False otherwise. Valid SMR file names
+    start with an Experiment ID and end with the suffix ".smr"
+    :param expNames: iterable of Experiment IDs
+    :param smrDir: string, valid path to a directory in file system
+    :return: numpy.ndarray
+    '''
     temp1 = []
     dirList = os.listdir(smrDir)
     for expName in expNames:
@@ -19,6 +31,16 @@ def smrFilesPresent(expNames, smrDir):
 #***********************************************************************************************************************
 
 def addDyeNamesIfNess(expNames, smrDir):
+    """
+    For every Experiment ID in "expNames", checks if a file in "smrDir" starting with the Experiment ID and ending with
+    ".smr" is present. If such a file is found and has in its name TWO addition characters between the Experiment ID and
+    ".smr" (usually a dye name such as 'LY', 'Rh' and 'Al'), identifies this file name without the ".smr" suffix as
+    the new index. Forms and returns a dictionary mapping strings in expNames to such new indices if found or
+    to themselves otherwise.
+    :param expNames: list of Experiment IDs
+    :param smrDir: string, path in the file system where SMR files are to be found
+    :return: dict
+    """
     newIndices = {}
     dirList = os.listdir(smrDir)
     for expName in expNames:
@@ -37,8 +59,17 @@ def addDyeNamesIfNess(expNames, smrDir):
     return newIndices
 
 #***********************************************************************************************************************
-def parseMetaDataFile(excelFile, excelSheet, smrDir):
 
+def parseMetaDataFile(excelFile, excelSheet, smrDir):
+    '''
+    Extracts the metadata in excel file "excelFile" to a pandas.DataFrame. Removes the row of experiments without
+    corresponding SMR files in "smrDir". Corrects Experiment IDs by adding dye names if corresponding SMR file
+    with additional characters denoting dye names are found in "smrDir". Return DataFrame.
+    :param excelFile: string, path to excel metadata file.
+    :param excelSheet: string, name of the sheet of "excelFile" containing the metadata of all experiments.
+    :param smrDir: string, path to a file system directory where SMR files are to be found.
+    :return: pandas.DataFrame
+    '''
     tempDf = pd.read_excel(excelFile, sheetname=excelSheet, header=None, parse_cols=None)
 
     currentVal = tempDf.loc[0, 0]
@@ -79,7 +110,12 @@ def parseMetaDataFile(excelFile, excelSheet, smrDir):
 #***********************************************************************************************************************
 
 def extractMetaData(mdDF, expName):
-
+    '''
+    Parses metadata information of an experiment in string form in the corresponding row of "mdDF" to numbers.
+    :param mdDF: pandas.DataFrame returned by the function "parseMetaDataFile" above.
+    :param expName: string, Experiment ID
+    :return: dict
+    '''
     expData = mdDF.loc[expName]
 
     freqEntry = str(expData[('Stimulus', 'Frequency')])
@@ -137,7 +173,7 @@ def extractMetaData(mdDF, expName):
 
     if not pd.isnull(pulseEntry):
         unresolved = []
-        # pulseEntry is expected to be made of two types of entries:
+        # pulseEntry is expected to be made up of two types of entries:
         # (i) a/b (ii) a, c / b which is the same as a/b , c/b
         try:
             for word in pulseEntry.split(','):
@@ -171,7 +207,12 @@ def extractMetaData(mdDF, expName):
 # **********************************************************************************************************************
 
 def validExpName(expName):
-
+    '''
+    Checks the validity of a string to be an experiment ID. Checks for two valid formats: "<6 digits>-<1 digit>" and
+    "<6 digits>-<1 digit><valid dye name>". Valid dye names are "LY", "Rh", "Al". Return True if valid, False otherwise
+    :param expName: string to be validated
+    :return: bool
+    '''
     lenCheckPass = len(expName) in [8, 10]
     if not lenCheckPass:
         return False
@@ -189,7 +230,16 @@ def validExpName(expName):
 # **********************************************************************************************************************
 
 def getExpIDsByCategory(excel, originalSheet, categorySheets, smrDir):
-
+    '''
+    Compiles and returns a dictionary with categories as keys and lists of corresponding experiment IDs as values.
+    Rows from "excel" excel file are excluded/corrected as described in the documentation of the function
+    "parseMetaDataFile"
+    :param excel: string, path to excel file containing metadata
+    :param originalSheet: string, name of sheet of "excel" containing metadata of all experiments before classification.
+    :param categorySheets: iterable of strings, containing names of sheets for neuron categories.
+    :param smrDir: string, path in file system where SMR files are to be found.
+    :return: dict
+    '''
     mdDF = parseMetaDataFile(excel, originalSheet, smrDir)
     expIDsByCat = {}
 

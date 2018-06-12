@@ -1,5 +1,12 @@
+'''
+Contains dictionaries mapping certain feature name abbreviations to their longer forms.
+'''
+
 import quantities as qu
 
+"""
+Mappings for meta data
+"""
 mdFN = {
     'expID':        'Experiment ID',
     'freq':         'Frequency in Hz',
@@ -8,6 +15,9 @@ mdFN = {
     'trialStart':   'Start Time of Trial (s)'
 }
 
+"""
+Mappings for response features
+"""
 fFN = {
     'OnsetE':       'Onset of Excitation in ms',
     'OnsetI':       'Onset of Inhibition in ms',
@@ -20,6 +30,9 @@ fFN = {
     'offset':       'Offset (unitless)'
 }
 
+"""
+Mappings for more response features
+"""
 newFFN = {
     'spontFR1': 'Spontaneous Activity\n Rate for 1s \nBefore trial (spikes per second)',
     'spontFR3': 'Spontaneous Activity\n Rate for 3s \nBefore trial (spikes per second)',
@@ -39,6 +52,9 @@ newFFN = {
     'fourthSpikeBISI': 'Third ISI (ms)',
 }
 
+"""
+Mappings between feature abbreviations and their units.
+"""
 newFFNUnits = {
     'spontFR1': qu.Hz,
     'spontFR3': qu.Hz,
@@ -58,6 +74,9 @@ newFFNUnits = {
     'fourthSpikeBISI': qu.ms,
 }
 
+"""
+Mappings between feature name abbreviations and name of functions in GJEphys.additionalEphysFuncs.py implementing them.
+"""
 extraParamFuncs = {
     'spontFR1': 'spontAct1Sec',
     'spontFR3': 'spontAct3Sec',
@@ -77,8 +96,14 @@ extraParamFuncs = {
     'fourthSpikeBISI': 'fourthSpikeBISI',
 }
 
+"""
+Legacy
+"""
 paramIndex = {'AE': 0, 'AI': 1, 'OnsetE': 2, 'OnsetI': 3, 'taurE': 4, 'taudE': 5, 'taurI': 6, 'taudI': 7, 'offset': 8}
 
+"""
+A subset of newFFN
+"""
 spikeFRSpikeTimesFNs = {
     'spontFR3': 'Spontaneous Activity\n Rate for 3s \nBefore trial (spikes per second)',
     'initFR': 'Spiking rate\n in [0, 75]ms\n (spikes per second)',
@@ -91,6 +116,9 @@ spikeFRSpikeTimesFNs = {
     'fourthSpikeBISI': 'Third ISI (ms)',
 }
 
+"""
+A subset of newFFNUnits
+"""
 spikeFRSpikeTimesFuncs = {
     'spontFR3': 'spontAct3Sec',
     'initFR': 'initSpikeRate',
@@ -104,7 +132,11 @@ spikeFRSpikeTimesFuncs = {
 }
 
 def getXBestFromCurrentData(currentData):
-
+    '''
+    Legacy function from fitting double exponential to response baseline.
+    :param currentData:
+    :return:
+    '''
     xBest = [0 for x in range(len(paramIndex))]
 
     for k, v in paramIndex.iteritems():

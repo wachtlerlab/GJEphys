@@ -1,3 +1,21 @@
+'''
+Description: This script is used to make and save individual figures of responses to pulse stimuli
+as well as overview figures. The input parameters required for generating such plots are provided in a json file which is
+supplied as a commandline argument. The json file must contain a dictionary with the following entries:
+"NIXPath": <string containing the file system path of a directory containing processed NIX files>
+"expName": <string containing a valid Experiment ID>
+"freqs": <list of floats, indicating the frequencies of stimulus to use, if they are present in the experiment,
+"catResDir": <string, indicating the file system path of an existing folder, within which generated images will be
+hierarchically organized. A folder with <Experiment ID> will be created within it, and with the <Experiment ID> folder,
+folders will be created, one for each present combination of (Pulse Duration, Pulse Interval, Frequency)>
+"downSampleFactor": float, factor by which traces are temporally downsampled before plotting.
+"type2Color": dict, must have the keys "BeforeStimulus", "DuringStimulus" and "AfterStimulus" with corresponding values
+indicating valid arguments for matplotlib color.
+"mplPars": dict, containing matplotlib rcParams to be overridden.
+
+Usage: python makePulseImages <json param file>
+'''
+
 import sys
 import os
 from matplotlib import pyplot as plt

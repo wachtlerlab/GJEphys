@@ -1,6 +1,8 @@
 # Ajayrama Kumaraswamy, 2016
 # Ginjang Project, LMU
-
+'''
+This file contains some functions useful when converting between objects of neo and NIX
+'''
 import nixio as nix
 import neo
 import quantities as qu

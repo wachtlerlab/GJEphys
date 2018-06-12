@@ -1,5 +1,9 @@
 # Ajayrama Kumaraswamy, 2016
 # Ginjang project, LMU
+"""
+Contains functions and classes useful for extracting stimulus and response traces as well as response spikes as
+neo analogsignals and spiketrains.
+"""
 
 from GJEphys.neoNIXIO import tag2AnalogSignal, multiTag2SpikeTrain, property2qu, getTagPosExt
 import nixio as nix
@@ -11,7 +15,12 @@ import pandas as pd
 from neoNIXIO import simpleFloat
 
 def getSecPulsePars(sec):
-
+    '''
+    Converts and returns Pulse duration, pulse interval and frequency of pulse stimuli contained in properties of
+    the section "sec"
+    :param sec: an NIX section
+    :return: tuple of three quantities.Quantity objects, (<pulse duration>, <pulse interval>, <frequency>)
+    '''
     pulseDur = property2qu(sec.props['PulseDuration'])
     pulseDur.units = qu.ms
 
@@ -24,7 +33,7 @@ def getSecPulsePars(sec):
     return (float(pulseDur.magnitude), float(pulseInt.magnitude), float(pulseFreq.magnitude))
 
 
-def getSpikeTrainStartStop(tagType, tagMetadata, Fs):
+def _getSpikeTrainStartStop(tagType, tagMetadata, Fs):
     '''
     Internal function, don't use
     '''
@@ -226,7 +235,7 @@ class RawDataAnalyser(object):
                     temp = {}
                     for typ in types:
 
-                        tStart, tStop = getSpikeTrainStartStop(typ, sec, Fs)
+                        tStart, tStop = _getSpikeTrainStartStop(typ, sec, Fs)
                         temp[typ] = SpikeTrain(times=[], t_start=tStart, t_stop=tStop, units=tStart.units)
                     spikes[freq].append(temp)
 
@@ -239,7 +248,7 @@ class RawDataAnalyser(object):
 
                 freq = tag.metadata.parent.props['Frequency'].values[0].value
 
-                tStart, tStop = getSpikeTrainStartStop(tag.type, tag.metadata, Fs)
+                tStart, tStop = _getSpikeTrainStartStop(tag.type, tag.metadata, Fs)
 
                 sp = multiTag2SpikeTrain(tag, tStart, tStop)
 

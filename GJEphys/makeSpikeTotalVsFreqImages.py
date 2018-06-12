@@ -1,3 +1,18 @@
+'''
+Description: This script is used to make and save seaborn point plots with freqeuncy on X axis, spike rate on Y axis
+and experiment ID as Hue. The input parameters required for generating such plots are provided in a json file which is
+supplied as a commandline argument. The json file must contain a dictionary with the following entries:
+"NIXPath": <string containing the file system path of a directory containing processed NIX files>
+"expNamesDict": <dictionary containing one key-value pair, with the key being a neuron category and value being
+a list of Experiment IDs belong to the neuron category in the key.>
+"freqs": <list of floats, indicating the frequencies of stimulus to use, if they are present in the experiment,
+"catResDir": <string, indicating the file system path of an existing folder, within which a folder with the category
+name in <expNamesDict> will be created and plot images will be saved in this folder.
+"mplPars": dict, containing matplotlib rcParams to be overridden.
+
+Usage: python makeSpikeTotalVsFreqImages.py <json param file>
+'''
+
 from GJEphys.rawDataAnalyse import RawDataAnalyser
 import matplotlib
 matplotlib.use("Agg")

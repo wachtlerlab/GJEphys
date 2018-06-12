@@ -1,3 +1,7 @@
+'''
+Legacy from fitting double exponentials to response baseline
+'''
+
 import numpy as np
 import subprocess
 import json
