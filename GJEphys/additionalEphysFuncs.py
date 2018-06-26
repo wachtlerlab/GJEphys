@@ -103,7 +103,7 @@ def totalSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
 
 def reboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     '''
-    Calculates the spike rate during interval [0, 50)ms following the end of stimulus application
+    Calculates the spike rate during interval [25, 100)ms following the end of stimulus application
     :param resp: unused
     :param spikes: see file documentation above
     :param xBest: unused
@@ -111,7 +111,7 @@ def reboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     :param expUnits: see file documentation above
     :return: quantites.Quantity
     '''
-    spikeRate = getSpikeRateIn(spikes, intervalStart=1 * qu.s, intervalEnd=1.05 * qu.s)
+    spikeRate = getSpikeRateIn(spikes, intervalStart=1.025 * qu.s, intervalEnd=1.1 * qu.s)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
 
@@ -119,7 +119,7 @@ def reboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
 
 def afterReboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     '''
-    Calculates the spike rate during interval [50, 2000)ms following the end of stimulus application
+    Calculates the spike rate during interval [100, 1000)ms following the end of stimulus application
     :param resp: unused
     :param spikes: see file documentation above
     :param xBest: unused
@@ -127,7 +127,7 @@ def afterReboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     :param expUnits: see file documentation above
     :return: quantites.Quantity
     '''
-    spikeRate = getSpikeRateIn(spikes, intervalStart=1.05 * qu.s, intervalEnd=2.00 * qu.s)
+    spikeRate = getSpikeRateIn(spikes, intervalStart=1.1 * qu.s, intervalEnd=2.00 * qu.s)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
 
