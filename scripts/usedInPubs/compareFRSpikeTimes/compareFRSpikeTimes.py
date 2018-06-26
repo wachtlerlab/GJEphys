@@ -17,12 +17,15 @@ import numpy as np
 from neo import SpikeTrain
 import sys
 from GJEphys import additionalEphysFuncs
+import matplotlib as mpl
+mpl.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
-from GJEMS.viz.matplotlibRCParams import mplPars
+from GJEphys.matplotlibRCParams import mplPars
 from scipy.stats import ttest_ind
 import os
 import shutil
+
 
 def saveData(inputXL, dataXL):
     '''
@@ -88,7 +91,7 @@ def saveData(inputXL, dataXL):
     dataDF.to_excel(dataXL)
 
 
-def plotFRData(dataXL, outBase):
+def plotFRFVsNE(dataXL, outBase):
     '''
     Uses firing rate feature values extracted in the function 'saveData' above and makes a violin plot using seaborn
     with the four response interval types on the X-Axes and Firing rate on Y-Axis.
@@ -135,16 +138,102 @@ def plotFRData(dataXL, outBase):
 
 
     ax.set_xticklabels(["Spontaneous\nActivity (3s)", "On-phasic\nResponse (75ms)",
-                        "Sustained\nResponse (925ms)", "Off-phasic\nResponse (50ms)"], rotation=45)
+                        "Inhibitory\nResponse (925ms)", "Rebound\nResponse (75ms)"], rotation=45)
     ax.set_ylim(-10, 80)
     ax.set_xlabel("")
 
-    l1, = ax.plot((), (), 'rs', label="Newly Emerged")
-    l2, = ax.plot((), (), 'bs', label="Forager")
-    ax.legend(handles=[l1, l2], loc="upper right")
+    # l1, = ax.plot((), (), 'rs', label="Newly Emerged")
+    # l2, = ax.plot((), (), 'bs', label="Forager")
+    # ax.legend(handles=[l1, l2], loc="upper right")
+
+    ax.legend().set_visible(False)
 
     fig.tight_layout()
     fig.savefig("{}_FR.png".format(outBase), dpi=150)
+
+
+def plotFRIndNrns(dataXL, outBase):
+    mplPars["lines.linewidth"] = 0.7
+    sns.set(style="darkgrid", rc=mplPars)
+
+    dataDF = pd.read_excel(dataXL)
+
+    FRColKeys = ["spontFR3", "initFR", "laterFR", "reboundFR", "afterReboundFR"]
+    FRCols = [spikeFRSpikeTimesFNs[x] for x in FRColKeys]
+
+    FRData = dataDF.loc[:, FRCols + [mdFN["expID"]]]
+    FRData.set_index(mdFN["expID"], inplace=True)
+    FRData.rename(columns={spikeFRSpikeTimesFNs[k]: k for k in FRColKeys}, inplace=True)
+    FRDataStacked = FRData.stack().reset_index()
+    FRDataStacked.rename(columns={0: "Firing Rate (spikes/s)",
+                                  "level_1": "Interval"}, inplace=True)
+
+
+    expIDLSMap = {}
+    for expID, expIDDF in dataDF.groupby(mdFN["expID"]):
+        lsUnique = expIDDF[mdFN["laborState"]].unique()
+        assert lsUnique.size == 1, "problem with data XL, {} has inconsistent {} entries".format(expID,
+                                                                                                 mdFN["laborState"])
+        expIDLSMap[expID] = lsUnique[0]
+
+    nForagers = sum([x == "Forager" for x in expIDLSMap.values()])
+    nNE = sum([x == "Newly Emerged" for x in expIDLSMap.values()])
+
+    foragerColorMap = sns.light_palette('g', nForagers)
+    NEColorMap = sns.light_palette('r', nNE)
+
+    expIDColorMap = {}
+    for expID, expIDDF in dataDF.groupby(mdFN["expID"]):
+        lsUnique = expIDDF[mdFN["laborState"]].unique()
+        assert lsUnique.size==1, "problem with data XL, {} has inconsistent {} entries".format(expID,
+                                                                                               mdFN["laborState"])
+        if lsUnique[0] == "Forager":
+            expIDColorMap[expID] = foragerColorMap.pop(0)
+        elif lsUnique[0] == "Newly Emerged":
+            expIDColorMap[expID] = NEColorMap.pop(0)
+
+
+
+    for expID, expIDDF in FRDataStacked.groupby(mdFN["expID"]):
+        fig1, ax1 = plt.subplots(figsize=(7, 5.6))
+
+        sns.pointplot(data=expIDDF, x="Interval", y="Firing Rate (spikes/s)", ci="sd",
+                   color=expIDColorMap[expID],
+                   ax=ax1)
+        ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90)
+        ax1.set_ylim(-10, 100)
+        ax1.set_xlabel("")
+        ax1.set_title(expID)
+        fig1.tight_layout()
+        fig1.savefig("{}_indExpIDFR_{}.png".format(outBase, expID), dpi=300)
+
+
+
+
+
+
+
+    fig, ax = plt.subplots(figsize=(7, 5.6))
+
+
+    sns.pointplot(data=FRDataStacked, x="Interval", y="Firing Rate (spikes/s)", hue=mdFN["expID"], ci="sd",
+                   dodge=True, palette=expIDColorMap,
+                   ax=ax)
+
+    # for l in ax.lines:
+    #     print(l.get_linewidth())
+    #     plt.setp(l, linewidth=1)
+    #     plt.setp(l, markersize=1)
+    # ax.set_xticklabels(["Spontaneous\nActivity (3s)", "On-phasic\nResponse (75ms)",
+    #                     "Sustained\nResponse (925ms)", "Off-phasic\nResponse (75ms)",
+    #                     "After\nResponse (900ms)"], rotation=45)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
+    ax.set_ylim(-10, 100)
+    ax.set_xlabel("")
+
+    ax.legend(bbox_to_anchor=(1.3, 1), fontsize=8, labelspacing=0.5)
+    fig.tight_layout()
+    fig.savefig("{}_indExpIDFR.png".format(outBase), dpi=300)
 
 
 def plotSpikeTimes(dataXL, outBase):
@@ -189,14 +278,17 @@ def plotSpikeTimes(dataXL, outBase):
         ax.text(colInd, -5, "{:1.1e}".format(pVal), fontdict={'color': col}, fontsize=plt.rcParams['xtick.labelsize'],
                 horizontalalignment='center', verticalalignment='center')
 
-    ax.set_xticklabels(spikeTimesCols, rotation=45)
+    xtickLabels = [x[:-5] for x in spikeTimesCols]
+    ax.set_xticklabels(xtickLabels, rotation=45)
     ax.set_ylim(-10, 80)
     ax.set_xlabel("")
 
-    l1, = ax.plot((), (), 'rs', label="Newly Emerged")
-    l2, = ax.plot((), (), 'bs', label="Forager")
-    ax.legend(handles=[l1, l2], loc="upper right")
+    # l1, = ax.plot((), (), 'rs', label="Newly Emerged")
+    # l2, = ax.plot((), (), 'bs', label="Forager")
+    # ax.legend(handles=[l1, l2], loc="upper right")
 
+    ax.legend().set_visible(False)
+    
     fig.tight_layout()
     fig.savefig("{}_spikeTimes.png".format(outBase), dpi=150)
 
@@ -361,7 +453,9 @@ if __name__ == "__main__":
     assert len(sys.argv) == 4, "Improper Usage! Please use as\n" \
                                "python {currFile} save <input excel file> " \
                                "<output data file>  or \n" \
-                               "python {currFile} plotFR <input Data excel file> " \
+                               "python {currFile} plotFRFvNE <input Data excel file> " \
+                               "<output Base> or\n" \
+                               "python {currFile} plotFRIndNrns <input Data excel file> " \
                                "<output Base> or\n" \
                                "python {currFile} plotSpikeTimes <input Data excel file> " \
                                "<output Base> or \n" \
@@ -372,8 +466,10 @@ if __name__ == "__main__":
 
     if sys.argv[1] == "save":
         saveData(*sys.argv[2:])
-    if sys.argv[1] == "plotFR":
-        plotFRData(*sys.argv[2:])
+    if sys.argv[1] == "plotFRFvNE":
+        plotFRFVsNE(*sys.argv[2:])
+    if sys.argv[1] == "plotFRIndNrns":
+        plotFRIndNrns(*sys.argv[2:])
     if sys.argv[1] == "plotSpikeTimes":
         plotSpikeTimes(*sys.argv[2:])
     if sys.argv[1] == "plotLaterFRVsSpontFR":
