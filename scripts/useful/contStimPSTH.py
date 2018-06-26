@@ -1,3 +1,12 @@
+'''
+This script has functions to save the spike data of all trials of a set of specified experiments and plot a PSTH of
+the responses of those trials from the saved data.
+The script calls different function depending on the first command line argument.
+Please look at the documentation of individual functions for more information.
+
+Usage: Execute this script without any command line arguments to get a list of usages
+'''
+
 import pandas as pd
 import quantities as qu
 from GJEphys.rawDataAnalyse import RawDataAnalyser
@@ -11,6 +20,15 @@ import seaborn as sns
 
 
 def saveContStimPSTH(inputXL, dataXL):
+    '''
+    Extracts the spike times of each trial of the set of experiments specified in <inputXL> and saves them into the
+    excel file <dataXL> with one spike data per row, including the metadata like <Experiment ID>, <Labor State>
+    and <TrialName>
+    :param inputXL: string, path of an excel file. The excel file should contain three columns with headings
+    "Experiment ID", "Labor State" and "NIX File Directory".
+    :param dataXL: string, path where resulting excel file will be written.
+    :return:
+    '''
     types = ['BeforeStimulus', 'DuringStimulus', 'AfterStimulus']
     typeDurs = [3 * qu.s, 1 * qu.s, 1 * qu.s]
 
@@ -56,7 +74,14 @@ def saveContStimPSTH(inputXL, dataXL):
 
 
 def saveFRTS(dataXL, statsXL):
-
+    '''
+    Uses spike data stored in <dataXL> to calculate firing rate for each trial and for time bins 20ms long over the
+    period starting 500ms before stimulus onset and ending 500ms after stimulus offset. Resulting values are stored one
+    firing rate per row along with metadata like <time (s)> (center of time bin), <Trial Name> and <Experiment ID>.
+    :param dataXL: string, path to an excel file, generated using the function saveData above
+    :param statsXL: string, path where the result data will be stored.
+    :return:
+    '''
     dataDF = pd.read_excel(dataXL)
 
 
@@ -89,7 +114,13 @@ def saveFRTS(dataXL, statsXL):
 
 
 def plotFRTS(statsXL, outBase):
-
+    """
+    Plots average firing rate vs time bar plot from <statsXL>, separating and averaging over each unique value in the
+    column <Labor State>.
+    :param statsXL: string, path to an excel file, generated using "saveFRTS" function
+    :param outBase: string, figure is saved as "<outBase>.png"
+    :return:
+    """
     statsDF = pd.read_excel(statsXL)
 
     binEdges = np.arange(-0.5, 1.5, 0.02)
@@ -117,7 +148,12 @@ def plotFRTS(statsXL, outBase):
 
 
 def plotContStimPSTH(dataXL, outBase):
-
+    """
+    Plots a PSTH plot, combining data from all trials in <dataXL>.
+    :param dataXL: string, path of an excel file.
+    :param outBase: string, figure is saved as "<outBase>.png"
+    :return:
+    """
     dataDF = pd.read_excel(dataXL)
     plt.rcParams.update(mplPars)
 
