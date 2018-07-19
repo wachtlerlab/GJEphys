@@ -57,7 +57,9 @@ def getGMMLastClusterCut(data):
     weights = bestGMM.weights_[meansArgSort]
     weightsDiagonalMatrix = np.diag(weights)
     weightedComps = np.dot(weightsDiagonalMatrix, np.vstack(tuple(indDists)))
-    dist = weightedComps.sum(axis=0)
+    pdf = weightedComps.sum(axis=0)
+
+    cdf = np.cumsum(pdf)
 
     # https://stackoverflow.com/questions/22579434/python-finding-the-intersection-point-of-two-gaussian-curves
     # intersection(s) between two Gaussians
@@ -94,11 +96,14 @@ def getGMMLastClusterCut(data):
             if any(isBetweenMeans):
                 clusterCutInd = np.where(isBetweenMeans)[0][0]
                 clusterCut = clusterCutSuspects[clusterCutInd]
-                # closestBinInd = np.argmin(np.abs(bins - clusterCut))
-                # error = 1 - cdf1[closestBinInd] + cdf2[closestBinInd]
-                error = mu2 - mu1
-                errors.append(error)
-                clusterCuts.append(clusterCut)
+                closestBinInd = np.argmin(np.abs(bins - clusterCut))
+                # discard cluster cuts which, when used for classification, result in less than 10% of identified maxima
+                # being classified as spikes. This is done mainly to avoid large cluster cuts than can be caused by
+                # far outliers.
+                if cdf[closestBinInd] < 0.9:
+                    error = mu2 - mu1
+                    errors.append(error)
+                    clusterCuts.append(clusterCut)
 
     if not clusterCuts:
         clusterCut = means[-1] - 3 * stds[1]
@@ -106,12 +111,7 @@ def getGMMLastClusterCut(data):
         clusterCut = clusterCuts[int(np.argmax(errors))]
 
     # plt.ion()
-    # fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(7, 5.6))
-    #
-    # # ax[0].plot(nComps, bics, 'b*-', label='bics')
-    # # ax[0].plot(nComps, aics, 'rs-', label='aics')
-    # # ax[0].plot([nComps[bestInd]] * 2, ax[0].get_ylim(), 'r--', label='best model components')
-    # # ax[0].legend(loc='upper right')
+    # fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(7, 5.6), sharex=True)
     #
     # for cc, er in zip(clusterCuts, errors):
     #     print("Cluster Cut={:.6f}, error={:.6f}".format(cc, er))
@@ -119,23 +119,23 @@ def getGMMLastClusterCut(data):
     # print("Stds: {}".format(stds))
     # print("Mean Gaps: {}".format(np.diff(means)))
     #
-    # ax[1].bar(bins[:-1], hist / hist.sum(), width=bins[1] - bins[0], color='b', label='data histogram')
-    # ax[1].plot(bins[:-1], dist[:-1] / dist[:-1].sum(), 'r', label='GMM fit')
-    # ax[1].plot([clusterCut, clusterCut], ax[1].get_ylim(), 'r--', label='Cluster cut')
+    # ax[0].bar(bins[:-1], hist / hist.sum(), width=bins[1] - bins[0], color='b', label='data histogram')
+    # ax[0].plot(bins[:-1], pdf[:-1], 'r', label='GMM fit')
+    # ax[0].plot([clusterCut, clusterCut], ax[0].get_ylim(), 'r--', label='Cluster cut')
     # for mean in means:
-    #     ax[1].plot([mean, mean], ax[1].get_ylim(), 'g--', label=None)
-    # ax[1].plot([mean, mean], ax[1].get_ylim(), 'g--', label="Cluster means")
+    #     ax[0].plot([mean, mean], ax[0].get_ylim(), 'g--', label=None)
+    # ax[0].plot([mean, mean], ax[0].get_ylim(), 'g--', label="Cluster means")
     #
+    # # ax[0].set_xlabel('suspected spike  Heights')
+    # ax[0].set_ylabel('Relative frequency')
+    # ax[0].legend(loc='upper right')
+    #
+    # ax[1].bar(bins[:-1], np.cumsum(hist / hist.sum()), width=bins[1] - bins[0], color='b', label='data histogram')
+    # ax[1].plot(bins[:-1], np.cumsum(pdf[:-1] / pdf[:-1].sum()), 'r', label='GMM fit')
+    # ax[1].plot([clusterCut, clusterCut], ax[1].get_ylim(), 'r--', label='Cluster cut')
     # ax[1].set_xlabel('suspected spike  Heights')
-    # ax[1].set_ylabel('Relative frequency')
+    # ax[1].set_ylabel('CDF')
     # ax[1].legend(loc='upper right')
-    #
-    # ax[2].bar(bins[:-1], np.cumsum(hist / hist.sum()), width=bins[1] - bins[0], color='b', label='data histogram')
-    # ax[2].plot(bins[:-1], np.cumsum(dist[:-1] / dist[:-1].sum()), 'r', label='GMM fit')
-    # ax[2].plot([clusterCut, clusterCut], ax[2].get_ylim(), 'r--', label='Cluster cut')
-    # ax[2].set_xlabel('suspected spike  Heights')
-    # ax[2].set_ylabel('CDF')
-    # ax[2].legend(loc='upper right')
     #
     # fig.tight_layout()
     # raw_input()
@@ -144,151 +144,171 @@ def getGMMLastClusterCut(data):
     return clusterCut
 
 
+def filterButterworth(analogSignal, cutoff=100, transitionWidth=40, rippleDB=20):
+
+    cutoff *= qu.Hz
+    nyqFreq = analogSignal.sampling_rate / 2
+
+    # b, a = iirfilter(order, cutoff / nyqFreq, btype='highpass', ftype='butter')
+
+    transitionWidth = transitionWidth * qu.Hz
+
+    N, beta = kaiserord(rippleDB, transitionWidth / nyqFreq)
+
+    tapsLP = firwin(N, cutoff / nyqFreq, window=('kaiser', beta))
+
+    temp = np.zeros((N,))
+    temp[(N - 1) / 2] = 1
+    tapsHP = temp - tapsLP
+
+    delay = (N - 1) * 0.5 * analogSignal.sampling_period
+
+    w, h = freqz(tapsHP, 1.0, int(nyqFreq))
+
+    f = w * (nyqFreq) / (2 * PI)
+
+    sigM = analogSignal.magnitude
+    sigM = sigM.reshape((sigM.shape[0],))
+    sigMFiltered = lfilter(tapsHP, 1.0, sigM)
+
+    temp = AnalogSignal(
+        signal=sigMFiltered,
+        sampling_rate=analogSignal.sampling_rate,
+        units=analogSignal.units,
+        t_start=analogSignal.t_start - delay
+    )
+    filteredSignal = temp.reshape((temp.shape[0],))
 
 
-class SpikeDetector(object):
+    # from scipy.fftpack import fft
+    # plt.ion()
+    # fig1 = plt.figure()
+    #
+    # plt.plot(f, h, 'b-o')
+    # plt.xlabel('Frequency(Hz)')
+    # plt.ylabel('Gain')
+    # plt.draw()
+    #
+    # fig2 = plt.figure()
+    #
+    #
+    # plt.plot(analogSignal.times, analogSignal, 'r')
+    # plt.plot(filteredSignal.times, filteredSignal, 'b')
+    # plt.legend(['Original Signal', 'Filtered Signal'])
+    # plt.xlabel('Time in ' + analogSignal.sampling_period.dimensionality.string)
+    # plt.draw()
+    #
+    # fig3 = plt.figure()
+    #
+    #
+    # freqResolution = 5 * qu.Hz
+    # NFFT = np.ceil(2 * nyqFreq / freqResolution).simplified
+    # NFFT = int(np.ceil(NFFT / 2)  * 2)
+    # actualFreqResolution = 2 * nyqFreq / NFFT
+    # frequencies = np.arange(int(NFFT/2)) * actualFreqResolution
+    #
+    #
+    # outSig = filteredSignal.magnitude
+    #
+    #
+    # origFFT = fft(sigM, NFFT)
+    # origFFT[0] = 0
+    # plt.plot(frequencies, np.abs(origFFT)[:int(NFFT/2)])
+    #
+    # filtFFT = fft(outSig, NFFT)
+    # plt.plot(frequencies, np.abs(filtFFT)[:int(NFFT/2)])
+    #
+    # plt.legend(['FFT of Original Signal', 'FFT of Filtered Signal'])
+    # plt.xlabel('Frequency(Hz)')
+    # plt.draw()
+    # raw_input()
+    # plt.close(fig1.number)
+    # plt.close(fig2.number)
+    # plt.close(fig3.number)
 
-    def __init__(self, analogSignal):
+    return filteredSignal
 
-        self.signalMean = analogSignal.mean()
 
-        self.analogSignal = analogSignal - self.signalMean
+def getNoiseStd(analogSignal):
+        sigMabs = np.abs(analogSignal.magnitude)
 
-    def filterButterworth(self, cutoff=100, transitionWidth=40, rippleDB=20):
-
-        cutoff *= qu.Hz
-        nyqFreq = self.analogSignal.sampling_rate / 2
-
-        # b, a = iirfilter(order, cutoff / nyqFreq, btype='highpass', ftype='butter')
-
-        transitionWidth = transitionWidth * qu.Hz
-
-        N, beta = kaiserord(rippleDB, transitionWidth / nyqFreq)
-
-        tapsLP = firwin(N, cutoff/nyqFreq, window=('kaiser', beta))
-
-        temp = np.zeros((N,))
-        temp[(N - 1) / 2] = 1
-        tapsHP = temp - tapsLP
-
-        delay = (N - 1) * 0.5 * self.analogSignal.sampling_period
-
-        w, h = freqz(tapsHP, 1.0, int(nyqFreq))
-
-        f = w * (nyqFreq) / (2 * PI)
-
-        sigM = self.analogSignal.magnitude
-        sigM = sigM.reshape((sigM.shape[0],))
-        sigMFiltered = lfilter(tapsHP, 1.0, sigM)
-
-        temp = AnalogSignal(
-                                           signal=sigMFiltered,
-                                           sampling_rate=self.analogSignal.sampling_rate,
-                                           units = self.analogSignal.units,
-                                           t_start=self.analogSignal.t_start - delay
-                                          )
-        self.filteredSignal = temp.reshape((temp.shape[0], ))
-
-        # fig1 = plt.figure()
-        # plt.show(block=False)
-        #
-        # plt.plot(f, h, 'b-o')
-        # plt.xlabel('Frequency(Hz)')
-        # plt.ylabel('Gain')
-        # plt.draw()
-        #
-        # fig2 = plt.figure()
-        # plt.show(block=False)
-        #
-        # plt.plot(self.analogSignal.times, self.analogSignal, 'r')
-        # plt.plot(self.filteredSignal.times, self.filteredSignal, 'b')
-        # plt.legend(['Original Signal', 'Filtered Signal'])
-        # plt.xlabel('Time in ' + self.analogSignal.sampling_period.dimensionality.string)
-        # plt.draw()
-        #
-        # fig3 = plt.figure()
-        # plt.show(block=False)
-        #
-        # freqResolution = 5 * qu.Hz
-        # NFFT = np.ceil(2 * nyqFreq / freqResolution).simplified
-        # NFFT = np.ceil(NFFT / 2)  * 2
-        # actualFreqResolution = 2 * nyqFreq / NFFT
-        # frequencies = np.arange(int(NFFT/2)) * actualFreqResolution
-        #
-        # origFFT = fft(self.analogSignal.magnitude, NFFT)
-        # origFFT[0] = 0
-        # plt.plot(frequencies, np.abs(origFFT)[:int(NFFT/2)])
-        #
-        # filtFFT = fft(self.filteredSignal.magnitude, NFFT)
-        # plt.plot(frequencies, np.abs(filtFFT)[:int(NFFT/2)])
-        #
-        # plt.legend(['FFT of Original Signal', 'FFT of Filtered Signal'])
-        # plt.xlabel('Frequency(Hz)')
-        # plt.draw()
-
-    def getNoiseStd(self):
-
-        sigMabs = np.abs(self.filteredSignal.magnitude)
+        # to remove regions of no signal, or signal artifically inserted by exclusion using " Intervals to Exclude (s)".
         sigMabsFiltered = sigMabs[sigMabs > 0.5]
 
-        return np.median(sigMabsFiltered) / 0.6745 * self.filteredSignal.units
+        return np.median(sigMabsFiltered) / 0.6745 * analogSignal.units
+
+        # return np.std(analogSignal.magnitude)
 
 
-    def thresholdAndDetect(self, minSpikeWidth, maxSpikeWidth):
+def thresholdAndDetect(analogSignal, minSpikeWidth, maxSpikeWidth):
 
-        thres = self.getNoiseStd()
+    # include all maxima of noise as well potential spikes. Otherwise we might loose spikes as well.
+    thres = getNoiseStd(analogSignal)
+    print("Threshold={}".format(thres))
 
-        maxSpikeWidthSamples = (maxSpikeWidth * qu.ms / self.filteredSignal.sampling_period).simplified.magnitude
+    maxSpikeWidthSamples = (maxSpikeWidth * qu.ms / analogSignal.sampling_period).simplified.magnitude
 
-        minSpikeWidthSamples = (minSpikeWidth * qu.ms / self.filteredSignal.sampling_period).simplified.magnitude
+    minSpikeWidthSamples = (minSpikeWidth * qu.ms / analogSignal.sampling_period).simplified.magnitude
 
-        sigM = self.filteredSignal.magnitude
-        sigM = sigM.reshape((sigM.shape[0],))
-        thresholded = np.int8(sigM > thres)
+    sigM = analogSignal.magnitude
+    sigM = sigM.reshape((sigM.shape[0],))
+    thresholded = np.int8(sigM > thres)
 
-        thresholdedDiff = np.diff(thresholded)
+    thresholdedDiff = np.diff(thresholded)
 
-        onsets = np.where(thresholdedDiff > 0)[0] + 1
+    onsets = np.where(thresholdedDiff > 0)[0] + 1
 
-        offsets = np.where(thresholdedDiff < 0)[0] + 1
+    offsets = np.where(thresholdedDiff < 0)[0] + 1
 
-        spikeInds = []
-        spikeHeights = []
+    spikeInds = []
+    spikeHeights = []
 
-        for onset, offset in zip(onsets, offsets):
+    for onset, offset in zip(onsets, offsets):
 
-            durAboveThesh = offset - onset
-            if (durAboveThesh < maxSpikeWidthSamples) and (durAboveThesh >= minSpikeWidthSamples):
+        durAboveThesh = offset - onset
+        if (durAboveThesh < maxSpikeWidthSamples) and (durAboveThesh >= minSpikeWidthSamples):
+            spike = analogSignal[onset:offset + 1]
+            spikeHeight = spike.max().magnitude
+            spikeHeights.append(spikeHeight)
+            spikeInd = (spike.argmax() + onset)
+            spikeInds.append(spikeInd)
 
-                spike = self.filteredSignal[onset:offset + 1]
-                spikeHeight = spike.max().magnitude
-                spikeHeights.append(spikeHeight)
-                spikeInd = (spike.argmax() + onset)
-                spikeInds.append(spikeInd)
+    spikeTimes = analogSignal.t_start + np.array(spikeInds) * analogSignal.sampling_period
+    spikeHeights = np.array(spikeHeights) * analogSignal.units
 
-        spikeTimes = self.filteredSignal.t_start + np.array(spikeInds) * self.filteredSignal.sampling_period
-        spikeHeights = np.array(spikeHeights) * self.filteredSignal.units
+    clusterCut = getGMMLastClusterCut(spikeHeights.magnitude)
 
-        clusterCut = getGMMLastClusterCut(spikeHeights.magnitude)
+    spikeTimes = spikeTimes[spikeHeights >= clusterCut]
+    spikeHeights = spikeHeights[spikeHeights >= clusterCut]
 
-        self.spikeTimes = spikeTimes[spikeHeights >= clusterCut]
-        self.spikeHeights = spikeHeights[spikeHeights >= clusterCut]
+    # fig4 = plt.figure()
 
+    # plt.show(block=False)
+    #
+    # plt.plot(self.analogSignal.times, self.analogSignal, 'r')
+    # plt.plot(self.filteredSignal.times, self.filteredSignal, 'b')
+    # plt.plot(self.filteredSignal.times, np.ones_like(self.filteredSignal) * thres, 'g')
+    # plt.legend(['Original Signal', 'Filtered Signal', 'Threshold'])
+    # plt.plot(self.spikeTimes, self.spikePeaks, 'ro', ms=10)
+    # plt.xlabel('Time in ' + self.analogSignal.sampling_period.dimensionality.string)
+    # plt.draw()
+    # raw_input("Press any key to continue...")
 
-
-        # fig4 = plt.figure()
-        # plt.show(block=False)
-        #
-        # plt.plot(self.analogSignal.times, self.analogSignal, 'r')
-        # plt.plot(self.filteredSignal.times, self.filteredSignal, 'b')
-        # plt.plot(self.filteredSignal.times, np.ones_like(self.filteredSignal) * thres, 'g')
-        # plt.legend(['Original Signal', 'Filtered Signal', 'Threshold'])
-        # plt.plot(self.spikeTimes, self.spikePeaks, 'ro', ms=10)
-        # plt.xlabel('Time in ' + self.analogSignal.sampling_period.dimensionality.string)
-        # plt.draw()
-        # raw_input("Press any key to continue...")
+    return spikeTimes, spikeHeights
 
 
+def detectSpikes(analogSignal, spikeMinWidth, spikeMaxWidth, *filterBW_args):
+
+    filteredSignal = filterButterworth(analogSignal, *filterBW_args)
+    signMed, filterSignalMedianRemoved = remove_median(filteredSignal)
+    return thresholdAndDetect(filterSignalMedianRemoved, spikeMinWidth, spikeMaxWidth)
+
+
+def remove_median(analogSignal):
+
+    signMedian = np.median(analogSignal.magnitude) * analogSignal.units
+    print("Signal Median={}".format(signMedian))
+    return signMedian, analogSignal - signMedian
 
 
 def removeSpikes(signal, template, enable_debugging):

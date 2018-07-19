@@ -4,7 +4,7 @@ from scipy.signal import argrelmin, argrelmax
 import os
 from GJEphys.neoNIXIO import addMultiTag, addTag, dataArray2AnalogSignal, property2qu, simpleFloat, \
                                  addQuantity2section, createPosDA
-from GJEphys.stimParEstimation import estimateGJStimPars
+from GJEphys.spikeDetection import detectSpikes
 import nixio as nix
 import numpy as np
 import quantities as qu
@@ -480,21 +480,15 @@ class RawDataProcessor(object):
 
     def detectSpikes(self):
 
-        from .spikeDetection import SpikeDetector
-
-        sd = SpikeDetector(self.voltageSignal)
-        sd.filterButterworth()
-
-        sd.thresholdAndDetect(0.5, 5)
-
-        self.spikeTimes = sd.spikeTimes
+        self.spikeTimes, spikeHeights = detectSpikes(analogSignal=self.voltageSignal,
+                                                     spikeMinWidth=0.5,
+                                                     spikeMaxWidth=5)
 
         self.spikesDetected = True
 
     #*******************************************************************************************************************
 
     def addStimAndSpikes(self, tagCount, typ, start, extent, blk, refs, sec):
-
 
         addTag(
                     name='Tag' + str(tagCount + 1),

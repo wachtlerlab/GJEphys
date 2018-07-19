@@ -324,7 +324,7 @@ def importAll(smrPath, excelFile, excelSheet, nixPath, expNames=None, exceptList
     smrsPresent = smrFilesPresent(expNames, smrPath)
 
     # any entry in metaDataDF.index only exists if both a corresponding SMR file exists and a corresponding row in the
-    # excel file exists. This is ensured in parseMetaDataFile
+    # excel file exists. This is ensured in the function parseMetaDataFile
     for expInd, expName in enumerate(expNames):
 
         if expName in exceptList:
@@ -345,7 +345,7 @@ def importAll(smrPath, excelFile, excelSheet, nixPath, expNames=None, exceptList
         metaData = extractMetaData(metaDataDF, expName)
 
         if metaData['voltCalibStr'] is None or metaData['stimCalibStr'] is None:
-            print('Warning: Insufficient calibration information to import {}'.format(expName))
+            print('Warning: Insufficient calibration information to import {}. Skipping it.'.format(expName))
             importResultDict[expName] = False
             continue
 
