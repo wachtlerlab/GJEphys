@@ -19,7 +19,6 @@ import quantities as qu
 from GJEphys.NEOFuncs import getSpikeRateIn, simpleFloat, getSpikeAmps
 from GJEphys.doubleExpFitting import doubleExpFun
 
-
 def spontAct1Sec(resp, spikes, xBest, xData, expUnits=qu.Hz):
     '''
     Calculates the spike rate during the 1s interval preceding stimulus application
@@ -36,6 +35,7 @@ def spontAct1Sec(resp, spikes, xBest, xData, expUnits=qu.Hz):
 
     return spikeRate
 
+
 def spontAct3Sec(resp, spikes, xBest, xData, expUnits=qu.Hz):
     '''
     Calculates the spike rate during the 3s interval preceding stimulus application
@@ -51,6 +51,7 @@ def spontAct3Sec(resp, spikes, xBest, xData, expUnits=qu.Hz):
     spikeRate *= simpleFloat(expUnits / qu.Hz)
 
     return spikeRate
+
 
 def initSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     '''
@@ -85,6 +86,7 @@ def laterSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
 
     return spikeRate
 
+
 def totalSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     '''
     Calculates the spike rate during interval [0, 1000)ms of stimulus application
@@ -100,6 +102,7 @@ def totalSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     spikeRate *= simpleFloat(expUnits / qu.Hz)
 
     return spikeRate
+
 
 def reboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     '''
@@ -117,6 +120,7 @@ def reboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
 
     return spikeRate
 
+
 def afterReboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     '''
     Calculates the spike rate during interval [100, 1000)ms following the end of stimulus application
@@ -128,6 +132,23 @@ def afterReboundSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
     :return: quantites.Quantity
     '''
     spikeRate = getSpikeRateIn(spikes, intervalStart=1.1 * qu.s, intervalEnd=2.00 * qu.s)
+
+    spikeRate *= simpleFloat(expUnits / qu.Hz)
+
+    return spikeRate
+
+
+def beforeOnsetSpikeRate(resp, spikes, xBest, xData, expUnits=qu.Hz):
+    '''
+    Calculates the spike rate during interval [-50, 0)ms before stimulus application
+    :param resp: unused
+    :param spikes: see file documentation above
+    :param xBest: unused
+    :param xData: unused
+    :param expUnits: see file documentation above
+    :return: quantites.Quantity
+    '''
+    spikeRate = getSpikeRateIn(spikes, intervalStart=-0.05 * qu.s, intervalEnd=0 * qu.s)
 
     spikeRate *= simpleFloat(expUnits / qu.Hz)
 

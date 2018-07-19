@@ -103,6 +103,7 @@ def plotFRFVsNE(dataXL, outBase):
 
     dataDF = pd.read_excel(dataXL)
 
+    # FRColKeys = ["spontFR3", "beforeOnsetFR", "initFR", "laterFR", "reboundFR"]
     FRColKeys = ["spontFR3", "initFR", "laterFR", "reboundFR"]
     FRCols = [spikeFRSpikeTimesFNs[x] for x in FRColKeys]
 
@@ -136,7 +137,8 @@ def plotFRFVsNE(dataXL, outBase):
         ax.text(colInd, -5, "{:1.1e}".format(pVal), fontdict={'color': col}, fontsize=plt.rcParams['xtick.labelsize'],
                 horizontalalignment='center', verticalalignment='center')
 
-
+    # ax.set_xticklabels(["Spontaneous\nActivity (3s)", "Pre-Onset\nActivity (50ms)", "On-phasic\nResponse (75ms)",
+    #                     "Inhibitory\nResponse (925ms)", "Rebound\nResponse (75ms)"], rotation=45)
     ax.set_xticklabels(["Spontaneous\nActivity (3s)", "On-phasic\nResponse (75ms)",
                         "Inhibitory\nResponse (925ms)", "Rebound\nResponse (75ms)"], rotation=45)
     ax.set_ylim(-10, 80)
@@ -164,7 +166,7 @@ def plotFRIndNrns(dataXL, outBase):
 
     dataDF = pd.read_excel(dataXL)
 
-    FRColKeys = ["spontFR3", "initFR", "laterFR", "reboundFR", "afterReboundFR"]
+    FRColKeys = ["spontFR3", "beforeOnsetFR", "initFR", "laterFR", "reboundFR", "afterReboundFR"]
     FRCols = [spikeFRSpikeTimesFNs[x] for x in FRColKeys]
 
     FRData = dataDF.loc[:, FRCols + [mdFN["expID"]]]
