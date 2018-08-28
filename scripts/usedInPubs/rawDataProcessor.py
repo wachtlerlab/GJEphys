@@ -42,9 +42,9 @@ from GJEphys.KKHAXLParsing import parseMetaDataFile, getExpIDsByCategory
 from GJEphys.folderDefs import excel, excelSheet, spike2Path
 
 categories = [
-                'DL-Int-1',
+                # 'DL-Int-1',
                 # 'DL-Int-2',
-                # 'JO neuron',
+                'JO neuron',
                 # 'MB neurons',
                 # 'BilateralN',
                 # 'DescendingN',

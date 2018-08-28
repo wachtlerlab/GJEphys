@@ -245,7 +245,7 @@ def getExpIDsByCategory(excel, originalSheet, categorySheets, smrDir):
 
     for category in categorySheets:
 
-        categoryExps = pd.read_excel(excel, category, parse_cols=[0], header=None)
+        categoryExps = pd.read_excel(excel, category, usecols=[0], header=None)
         categoryExps = filter(validExpName, map(str, categoryExps.iloc[:, 0]))
 
         categoryExps = addDyeNamesIfNess(categoryExps, smrDir).values()

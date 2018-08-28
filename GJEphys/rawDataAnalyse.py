@@ -59,13 +59,23 @@ def _getSpikeTrainStartStop(tagType, tagMetadata, Fs):
     return tStart, tStop
 
 
-
 def isPulseTag(tag):
-
+    """
+    Returns True if the type of <tag> is "OnPulse" or "OffPulse"
+    :param tag: nix.Tag object
+    :return: bool
+    """
     return tag.type.startswith('OnPulse') or tag.type.startswith('OffPulse')
 
 
 def splitPulseTagType(tag):
+    """
+    Parses the type of <tag> to determine and return the type of pulse tag and the number associated with it. It
+    requires that the type of <tag> is formatted as "<tag type><pulse number>" where <tag type> is "OnPulse" or
+    "OffPulse" and <pulse number> is an integer.
+    :param tag: nix.Tag object
+    :return: (int, string), (pulse number, pulse stimulus type)
+    """
 
     assert isPulseTag(tag), 'Tag {} of type {} is not a pulse tag'.format(tag.name, tag.type)
 
@@ -83,7 +93,14 @@ def splitPulseTagType(tag):
 
     return pulseNumber, pulseStimType
 
+
 def secPres(testSec, secs):
+    """
+    Legacy function, do not use.
+    :param testSec:
+    :param secs:
+    :return:
+    """
 
     for secInd, sec in enumerate(secs):
         freqPres = testSec.props['Frequency'].values[0].value == sec.props['Frequency'].values[0].value
@@ -104,7 +121,6 @@ class RawDataAnalyser(object):
 
     def __init__(self, expName, dirpath):
         '''
-
         :param expName: string, experiment name/ID
         :param dirpath: string, path for finding the NIX files
         '''
@@ -113,6 +129,12 @@ class RawDataAnalyser(object):
         self.nixFile = nix.File.open(str(os.path.join(dirpath, expName + '.h5')), nix.FileMode.ReadOnly)
 
     def getContStats(self):
+        """
+        Returns a dictionary with frequencies used for continuous stimuli as keys and lists of associated trial names
+        as values. Trial names are formatted as "TrialX" where X is the trial number of the associated stimulus
+        frequency.
+        :return: dict
+        """
 
         contSec = self.nixFile.sections['VibrationStimulii-Processed'].sections['ContinuousStimulii']
         freqStats = {}
@@ -123,6 +145,12 @@ class RawDataAnalyser(object):
         return freqStats
 
     def getPulseStats(self):
+        """
+        Returns a dictionary with combinations of pulse parameters, formatted as (<Pulse Duration>, <Pulse Interval>),
+        as keys and corresponding lists of trial names as values. Trial names are formatted as "TrialX" where X is the
+        trial number of the associated pulse parameter combination.
+        :return: dict
+        """
         tempDF = pd.DataFrame()
         if 'PulseStimulii' in self.nixFile.sections['VibrationStimulii-Processed'].sections:
             pulseParSecNames = {}
@@ -145,12 +173,15 @@ class RawDataAnalyser(object):
 
     def getContResps(self, freqs=None, types=None):
         '''
-        Collect and return the responses of the neuron from the current experiment to vibration stimulii of specified frequencies and types
-        :param freqs: iterable of floats, the frequencies of vibration stimulii to which responses are collected
-        :param types: string, must be one of 'BeforeStimulus', 'DuringStimulus' or 'AfterSimulus'. They stand for intervals of
-        3 seconds before applying stimulus, during the stimulus and 3 seconds after the end of applying the stimulus.
-        :return: resps, dict. resps has freqs as keys and freqResps as values. Each of the freqResps is a list of dicts,
-        one dict per trial. Each of these dicts have types as keys and neo.analogsignal as values.
+        Collects and returns the responses from the current experiment to vibration stimulii of specified frequencies and types
+        :param freqs: iterable of floats, the frequencies of vibration stimulii to which responses are collected.
+        Default: List of all frequencies used in the experiment
+        :param types: list, must be a subset of ['BeforeStimulus', 'DuringStimulus', 'AfterSimulus']. The strings
+        correspond to time intervals of 3 seconds stimulus onset, during the stimulus and 3 seconds after stimulus
+        offset. Default: ['BeforeStimulus', 'DuringStimulus', 'AfterSimulus'].
+        :return: dict, with three levels of nesting. First level of nesting has combination of pulse parameters
+        as keys. The second level has trial names as keys. The third level has strings in <types> as keys and response
+        traces formatted as neo.analogsignal as values.
         '''
 
         if freqs is None:
@@ -200,12 +231,15 @@ class RawDataAnalyser(object):
 
     def getContSpikes(self, freqs=None, types=None):
         '''
-        Collect and return the spikes of the neuron from the current experiment to vibration stimulii of specified frequencies and types
-        :param freqs: iterable of floats, the frequencies of vibration stimulii to which responses are collected
-        :param types: string, must be one of 'BeforeStimulus', 'DuringStimulus' or 'AfterSimulus'. They stand for intervals of
-        3 seconds before applying stimulus, during the stimulus and 3 seconds after the end of applying the stimulus.
-        :return: spikes, dict. spikes has freqs as keys and freqSpikes as values. Each of the freqSpikes is a list of dicts,
-        one dict per trial. Each of these dicts have types as keys and neo.spiketrain as values.
+        Collects and returns the spike times during the responses of the current experiment to vibration stimulii of specified frequencies and types
+        :param freqs: iterable of floats, the frequencies of vibration stimulii to which responses are collected.
+        Default: List of all frequencies used in the experiment
+        :param types: list, must be a subset of ['BeforeStimulus', 'DuringStimulus', 'AfterSimulus']. The strings
+        correspond to time intervals of 3 seconds stimulus onset, during the stimulus and 3 seconds after stimulus
+        offset. Default: ['BeforeStimulus', 'DuringStimulus', 'AfterSimulus'].
+        :return: dict, with three levels of nesting. First level of nesting has frequency values as keys.
+        The second level has trial names as keys. The third level has strings in <types> as keys and spike times
+         formatted as neo.spiketrain as values.
         '''
 
         if freqs is None:
@@ -261,10 +295,23 @@ class RawDataAnalyser(object):
 
 
     def getPulseResps(self, types=None, pulsePars=None):
+        '''
+        Collects and returns the responses from the current experiment to pulse stimulii of specified
+        pulse parameter combinations.
+        :param pulsePars: iterable of 2 float tuples, the combination of pulse parameters, for which responses are
+        collected and returned. The tuples need to be formatted as (<Pulse Duration>, <Pulse Interval>).
+        Default: All pulse parameter combinations used for the experiment.
+        :param types: list, must be a subset of ['BeforeStimulus', 'DuringStimulus', 'AfterSimulus']. The strings
+        correspond to time intervals of 3 seconds stimulus onset, during the stimulus and 3 seconds after stimulus
+        offset. Default: ['BeforeStimulus', 'DuringStimulus', 'AfterSimulus'].
+        :return: dict, with three levels of nesting. First level of nesting has combination of pulse parameters
+        as keys. The second level has trial names as keys. The third level has strings in <types> as keys and response
+        traces formatted as neo.analogsignal as values.
+        '''
 
         if not 'PulseStimulii' in self.nixFile.sections['VibrationStimulii-Processed'].sections:
 
-            return  {}
+            return {}
         else:
             ppSec = self.nixFile.sections['VibrationStimulii-Processed'].sections['PulseStimulii']
 
@@ -319,6 +366,19 @@ class RawDataAnalyser(object):
             return resps
 
     def getPulseSpikes(self, types=None, pulsePars=None):
+        '''
+       Collects and returns the spike times during the responses of the current experiment to pulse stimulii of specified
+       pulse parameter combinations.
+       :param pulsePars: iterable of 2 float tuples, the combination of pulse parameters, for which responses are
+       collected and returned. The tuples need to be formatted as (<Pulse Duration>, <Pulse Interval>).
+       Default: All pulse parameter combinations used for the experiment.
+       :param types: list, must be a subset of ['BeforeStimulus', 'DuringStimulus', 'AfterSimulus']. The strings
+       correspond to time intervals of 3 seconds stimulus onset, during the stimulus and 3 seconds after stimulus
+       offset. Default: ['BeforeStimulus', 'DuringStimulus', 'AfterSimulus'].
+       :return: dict, with three levels of nesting. First level of nesting has combination of pulse parameters
+       as keys. The second level has trial names as keys. The third level has strings in <types> as keys and spike trains
+       formatted as neo.spiketrains as values.
+       '''
 
         if not 'PulseStimulii' in self.nixFile.sections['VibrationStimulii-Processed'].sections:
 

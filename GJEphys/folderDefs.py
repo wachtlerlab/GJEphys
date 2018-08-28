@@ -7,7 +7,9 @@ import os
 from GJEphys.KKHAXLParsing import parseMetaDataFile, getExpIDsByCategory
 
 '''
-A folder to store all data. All input data, intermediate processed data and output data will be collected here.
+A folder to store all data. All input data, intermediate processed data and output data will be collected in the folder
+"<homeFolder>/DataAndResults/ephys".
+
 (SMR files containing raw electrophysiological traces need to be manually placed in "spike2Path" below)
 '''
 homeFolder = "/home/aj/"

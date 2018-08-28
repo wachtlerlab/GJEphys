@@ -18,26 +18,26 @@ from GJEphys.folderDefs import excel, excelSheet, spike2Path
 
 from GJEphys.KKHAXLParsing import getExpIDsByCategory
 
-# categories = [
-#                 'DL-Int-1',
-#                 # 'DL-Int-2',
-#                 # 'JO neuron',
-#                 # 'MB neurons',
-#                 # 'BilateralN',
-#                 # 'DescendingN',
-#                 # 'AscendingN',
-#                 # 'Bilateral Descending N',
-#                 # 'JO terminal local neuron'
-#             ]
-#
-# expIDsByCat = getExpIDsByCategory(excel, excelSheet, categories, spike2Path)
-# expNames = []
-# for cat, catExpNames in expIDsByCat.iteritems():
-#     expNames += catExpNames
+categories = [
+                # 'DL-Int-1',
+                # 'DL-Int-2',
+                'JO neuron',
+                # 'MB neurons',
+                # 'BilateralN',
+                # 'DescendingN',
+                # 'AscendingN',
+                # 'Bilateral Descending N',
+                # 'JO terminal local neuron'
+            ]
+
+expIDsByCat = getExpIDsByCategory(excel, excelSheet, categories, spike2Path)
+expNames = []
+for cat, catExpNames in expIDsByCat.iteritems():
+    expNames += catExpNames
 
 # **********************************************************************************************************************
 
-expNames = ["130605-1LY"]
+# expNames = ["130313-4Rh"]
 
 # **********************************************************************************************************************
 

@@ -86,7 +86,6 @@ def saveFRTS(dataXL, statsXL):
     '''
     dataDF = pd.read_excel(dataXL)
 
-
     statsDF = pd.DataFrame()
 
     binEdges = np.arange(-0.5, 1.5, 0.02)
@@ -110,7 +109,6 @@ def saveFRTS(dataXL, statsXL):
                 assert len(lsUnique) == 1, "Inconsistent labor state entries for {}, {}".format(expID, trialInd)
                 tempS[mdFN["laborState"]] = lsUnique[0]
                 statsDF = statsDF.append(tempS, ignore_index=True)
-
 
     statsDF.to_excel(statsXL)
 

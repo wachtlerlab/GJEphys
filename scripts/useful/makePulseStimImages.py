@@ -35,11 +35,11 @@ from GJEphys.folderDefs import homeFolder, excel, excelSheet, NIXPath, spike2Pat
 from GJEphys.KKHAXLParsing import parseMetaDataFile, getExpIDsByCategory
 
 categories = [
-                'DL-Int-1',
+                # 'DL-Int-1',
                 # 'DL-Int-2',
                 # 'JO neuron',
                 # 'MB neurons',
-                # 'BilateralN',
+                'BilateralN',
                 # 'DescendingN',
                 # 'AscendingN',
                 # 'Bilateral Descending N',
@@ -72,7 +72,7 @@ expIDsByCat = getExpIDsByCategory(excel, excelSheet, categories, spike2Path)
 
 # **********************************************************************************************************************
 
-outDir = os.path.join(homeFolder, 'DataAndResults/GJEphys/PulseStimsCatalogue')
+outDir = os.path.join(homeFolder, 'DataAndResults/ephys/PulseStimsCatalogue')
 if not os.path.exists(outDir):
     os.mkdir(outDir)
 

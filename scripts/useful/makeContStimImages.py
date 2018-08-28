@@ -28,28 +28,28 @@ mplPars["lines.linewidth"] = 0.75
 mplPars["lines.markersize"] = 4
 
 # **********************************************************************************************************************
-# from GJEphys.KKHAXLParsing import parseMetaDataFile, getExpIDsByCategory
-# from GJEphys.folderDefs import NIXPath, spike2Path, excelSheet, excel
-#
-# categories = [
-#                 'DL-Int-1',
-#                 # 'DL-Int-2',
-#                 # 'JO neuron',
-#                 # 'MB neurons',
-#                 # 'BilateralN',
-#                 # 'DescendingN',
-#                 # 'AscendingN',
-#                 # 'Bilateral Descending N',
-#                 # 'JO terminal local neuron'
-#             ]
-#
-# mdDF = parseMetaDataFile(excel, excelSheet, spike2Path)
-# expNames = map(str, mdDF.index)
-#
-# expIDsByCat = getExpIDsByCategory(excel, excelSheet, categories, spike2Path)
+from GJEphys.KKHAXLParsing import parseMetaDataFile, getExpIDsByCategory
+from GJEphys.folderDefs import NIXPath, spike2Path, excelSheet, excel
+
+categories = [
+                # 'DL-Int-1',
+                # 'DL-Int-2',
+                'JO neuron',
+                # 'MB neurons',
+                # 'BilateralN',
+                # 'DescendingN',
+                # 'AscendingN',
+                # 'Bilateral Descending N',
+                # 'JO terminal local neuron'
+            ]
+
+mdDF = parseMetaDataFile(excel, excelSheet, spike2Path)
+expNames = map(str, mdDF.index)
+
+expIDsByCat = getExpIDsByCategory(excel, excelSheet, categories, spike2Path)
 # **********************************************************************************************************************
 
-expIDsByCat = {'DL-Int-1': ['130523-3LY']}
+# expIDsByCat = {'DL-Int-1': ['130523-3LY']}
 # # expIDsByCat = {'JO terminal local neuron': ["130415-1LY"]}
 # # expIDsByCat = {"JO neuron": ["130517-1Al"]}
 # # expIDsByCat = {"JO neuron": ["130318-3LY"]}
