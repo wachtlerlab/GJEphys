@@ -11,6 +11,7 @@ Usage: Execute this script without any command line arguments to get a list of u
 
 from GJEphys.pdColumnNameMapCont import mdFN, spikeFRSpikeTimesFNs, spikeFRSpikeTimesFuncs
 from GJEphys.rawDataAnalyse import RawDataAnalyser
+from GJEphys.orphanFuncs import getWelchDF
 import pandas as pd
 import quantities as qu
 import numpy as np
@@ -22,9 +23,12 @@ mpl.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 from GJEphys.matplotlibRCParams import mplPars
-from scipy.stats import ttest_ind
+from scipy.stats import ttest_ind, linregress, t
 import os
 import shutil
+import warnings
+warnings.filterwarnings(action='once')
+
 
 
 def saveData(inputXL, dataXL):
@@ -262,18 +266,18 @@ def plotSpikeTimes(dataXL, outBase):
     spikeTimesData = dataDF.loc[:, spikeTimesCols+[mdFN["laborState"]]]
     spikeTimesData.set_index(mdFN["laborState"], inplace=True)
     spikeTimesDataStacked = spikeTimesData.stack().reset_index()
-    spikeTimesDataStacked.rename(columns={0: "Time (ms)",
+    spikeTimesDataStacked.rename(columns={0: "Spike Time (ms)",
                                   "level_1": "Interval"}, inplace=True)
 
     sns.set(style="darkgrid", rc=mplPars)
 
     fig, ax = plt.subplots(figsize=(7, 5.6))
 
-    sns.violinplot(hue=mdFN['laborState'], y="Time (ms)", x="Interval",
+    sns.violinplot(hue=mdFN['laborState'], y="Spike Time (ms)", x="Interval",
                 data=spikeTimesDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'], palette=["r", "b"],
                 order=spikeTimesCols, split=True, scale="area", inner=None, cut=0, linewidth=0, scale_hue=False)
 
-    sns.pointplot(hue=mdFN['laborState'], y="Time (ms)", x="Interval",
+    sns.pointplot(hue=mdFN['laborState'], y="Spike Time (ms)", x="Interval",
                 data=spikeTimesDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'], palette=['w', 'w'], join=False,
                   markers="_", dodge=True, ci=None, size=30)
 
@@ -324,73 +328,122 @@ def plotInhFRVsSpontFR(dataXL, outDir):
     nExpIDs = len(dataDF["Experiment ID"].unique())
 
     allFig, allAx = plt.subplots(figsize=(7, 5.6))
-    fvneFig, fvneAx = plt.subplots(figsize=(7, 5.6))
 
 
     for expInd, (expID, expDF) in enumerate(dataDF.groupby("Experiment ID")):
 
         print("Doing {}".format(expID))
 
-        expCol = plt.cm.spectral((expInd + 1) / float(nExpIDs))
+        expCol = plt.cm.Spectral((expInd + 1) / float(nExpIDs))
 
-
-
-        allAx.plot(expDF[spikeFRSpikeTimesFNs["spontFR3"]],
-                   expDF[spikeFRSpikeTimesFNs["laterFR"]], color=expCol, ms=5, marker="o", ls="None")
-
-        if expDF.size:
-            if expDF.iloc[0, :][mdFN["laborState"]] == "Forager":
-                lsCol = "b"
-            else:
-                lsCol = 'r'
-            fvneAx.plot(expDF[spikeFRSpikeTimesFNs["spontFR3"]],
-                       expDF[spikeFRSpikeTimesFNs["laterFR"]], color=lsCol, ms=5, marker="o", ls="None", label=None)
+        allAx.plot(expDF[spikeFRSpikeTimesFNs["laterFR"]], expDF[spikeFRSpikeTimesFNs["spontFR3"]],
+                   color=expCol, ms=5, marker="o", ls="None")
 
         fig, ax = plt.subplots(figsize=(7, 5.6))
         maxTrials = max(float(s[5:]) + 1 for s in expDF["TrialName"])
         for rowID, rowS in expDF.iterrows():
             trialNo = float(rowS["TrialName"][5:]) + 1
-            col = plt.cm.spectral(1 - trialNo / maxTrials)
-            ax.plot(rowS[spikeFRSpikeTimesFNs["spontFR3"]],
-                    rowS[spikeFRSpikeTimesFNs["laterFR"]],
+            col = plt.cm.Spectral(1 - trialNo / maxTrials)
+            ax.plot(rowS[spikeFRSpikeTimesFNs["laterFR"]],
+                    rowS[spikeFRSpikeTimesFNs["spontFR3"]],
                     color=col, marker="o", ms=10)
 
-        ax.set_ylabel("FR during Sustained \n Response (75 to 1000ms)")
-        ax.set_xlabel("FR during Spontaneous \n Response (-3000 to 0ms)")
+        ax.set_xlabel("FR during Sustained \n Response (75 to 1000ms)")
+        ax.set_ylabel("FR during Spontaneous \n Response (-3000 to 0ms)")
         ax.set_title("VIBGYOR colormap\nViolet=Trial {}, Red=Trial {}".format(1, maxTrials))
+
+        ax.set_xlim(-5, 50)
+        ax.set_ylim(-5, 50)
 
         fig.tight_layout()
         fig.savefig(os.path.join(outDir, "{}.png".format(expID)), dpi=300)
         plt.close(fig.number)
 
-    allAx.set_ylabel("FR during Sustained \n Response (75 to 1000ms)")
-    allAx.set_xlabel("FR during Spontaneous \n Response (-3000 to 0ms)")
+    allAx.set_xlabel("FR during Sustained \n Response (75 to 1000ms)")
+    allAx.set_ylabel("FR during Spontaneous \n Response (-3000 to 0ms)")
     maxX = 25
     allAx.plot((0, maxX), (0, maxX), 'k:')
-    allAx.set_ylim(-5, 60)
-    allAx.set_xlim(-5, 30)
+    allAx.set_xlim(-5, 50)
+    allAx.set_ylim(-5, allAx.get_ylim()[1] + 10)
 
     allFig.tight_layout()
     allFig.savefig(os.path.join(outDir, "allExps.png"), dpi=300)
 
-    allAx.set_xlim(-5, 15)
-    allAx.set_ylim(-5, 20)
+    # allAx.set_ylim(-5, 15)
+    # allAx.set_xlim(-5, 20)
+    #
+    # # allFig.tight_layout()
+    # allFig.savefig(os.path.join(outDir, "allExps_zoomed.png"), dpi=300)
 
-    allFig.tight_layout()
-    allFig.savefig(os.path.join(outDir, "allExps_zoomed.png"), dpi=300)
+    fvneFig, fvneAx = plt.subplots(figsize=(7, 5.6))
+    fvneFigMeans, fvneAxMeans = plt.subplots(figsize=(7, 5.6))
 
-    fvneAx.set_ylabel("FR during Sustained \n Response (75 to 1000ms)")
-    fvneAx.set_xlabel("FR during Spontaneous \n Response (-3000 to 0ms)")
+    def add_regression_plot(dataDF, x, y, color, ax1):
 
-    fvneAx.plot((0, maxX), (0, maxX / 3), 'k:')
-    fvneAx.set_ylim(-5, 60)
-    fvneAx.set_xlim(-5, 30)
+        xData, yData = dataDF[x], dataDF[y]
+        xMin, xMax = xData.min(), xData.max()
 
-    l1, = fvneAx.plot((), (), 'bo', ms=5)
-    l2, = fvneAx.plot((), (), 'ro', ms=5)
-    fvneAx.legend((l1, l2), ("Forager", "Newly Emerged"), loc="best")
+        LRRes = linregress(xData, yData)
+        ax1.plot(xData, yData, color=color, marker='o', ls='None', ms=5)
+        ax1.plot((xMin, xMax), (xMin * LRRes[0] + LRRes[1],
+                                                   xMax * LRRes[0] + LRRes[1]), color=color, ls='-', marker='None')
+        l1, = ax1.plot((), (), color=color, marker='o', ls='-', ms=5)
+        return l1, LRRes
+
+    foragerData = dataDF.loc[lambda x: x[mdFN["laborState"]] == "Forager", :]
+
+    fLegendHandle, fLRRes = add_regression_plot(foragerData, y=spikeFRSpikeTimesFNs["spontFR3"],
+                                        x=spikeFRSpikeTimesFNs["laterFR"], color='b', ax1=fvneAx)
+
+    neData = dataDF.loc[lambda x: x[mdFN["laborState"]] == "Newly Emerged", :]
+    neLegendHandle, neLRRes = add_regression_plot(neData, y=spikeFRSpikeTimesFNs["spontFR3"],
+                                        x=spikeFRSpikeTimesFNs["laterFR"], color='r', ax1=fvneAx)
+
+    fvneAx.set_xlabel("FR during Sustained \n Response (75 to 1000ms)")
+    fvneAx.set_ylabel("FR during Spontaneous \n Response (-3000 to 0ms)")
+
+    fvneAx.set_xlim(-5, 50)
+    fvneAx.set_ylim(-5, fvneAx.get_ylim()[1] + 10)
+
+    fvneAx.legend((fLegendHandle, neLegendHandle),
+                  ("Forager,\nslope={:0.3g}".format(fLRRes[0]),
+                   "Newly Emerged,\nslope={:0.3g}".format(neLRRes[0])),
+                  loc="upper right")
     fvneFig.tight_layout()
     fvneFig.savefig(os.path.join(outDir, "allExpsFVsNE.png"), dpi=300)
+
+    foragerDataMeans = foragerData.groupby(mdFN["expID"]).mean()
+    neDataMeans = neData.groupby(mdFN["expID"]).mean()
+    fLegendHandle, fLRResMeans = add_regression_plot(foragerDataMeans, y=spikeFRSpikeTimesFNs["spontFR3"],
+                                                x=spikeFRSpikeTimesFNs["laterFR"], color='b', ax1=fvneAxMeans)
+
+    neLegendHandle, neLRResMeans = add_regression_plot(neDataMeans, y=spikeFRSpikeTimesFNs["spontFR3"],
+                                                  x=spikeFRSpikeTimesFNs["laterFR"], color='r', ax1=fvneAxMeans)
+    # Ref: https://stats.stackexchange.com/questions/93540/testing-equality-of-coefficients-from-two-different-regressions#99536
+    slopeComparisonStat = (fLRResMeans[0] - neLRResMeans[0]) / (np.linalg.norm([fLRResMeans[4], neLRResMeans[4]]))
+    nForagerMeans = foragerDataMeans.shape[0]
+    nNEMeans = neDataMeans.shape[0]
+    foragerMeansVar = (fLRResMeans[4] ** 2) * nForagerMeans
+    NEMeansVar = (neLRResMeans[4] ** 2) * nNEMeans
+    welchDF = getWelchDF(foragerMeansVar, NEMeansVar, nForagerMeans, nNEMeans, nForagerMeans, nNEMeans)
+
+    pValSlopeDiff = 2 * (1-t.cdf(slopeComparisonStat, welchDF))
+
+    print("Significance of difference of slopes for means: {}".format(pValSlopeDiff))
+
+    fvneAxMeans.set_xlabel("Firing Rate during\nInhibitory Response (spikes/s)")
+    fvneAxMeans.set_ylabel("Firing Rate during\nSpontaneous Activity\n(spikes/s)")
+
+    fvneAxMeans.plot((0, 10), (0, 10), 'k--')
+
+    fvneAxMeans.legend((fLegendHandle, neLegendHandle),
+                  ("Forager,\nslope={:0.3g}".format(fLRResMeans[0]),
+                   "Newly\nEmerged,\nslope={:0.3g}".format(neLRResMeans[0])),
+                  loc="best")
+    fvneAxMeans.set_aspect("equal", adjustable="datalim")
+    fvneAxMeans.set_xlim(0, 22)
+    fvneFigMeans.tight_layout()
+    fvneFigMeans.savefig(os.path.join(outDir, "allExpsFVsNE_means.png"), dpi=300)
 
 
 def plotFRRelative2SpontFR(dataXL, outBase):
@@ -474,17 +527,31 @@ if __name__ == "__main__":
 
     if sys.argv[1] == "save":
         saveData(*sys.argv[2:])
-    if sys.argv[1] == "plotFRFvNE":
+    elif sys.argv[1] == "plotFRFvNE":
         plotFRFVsNE(*sys.argv[2:])
-    if sys.argv[1] == "plotFRIndNrns":
+    elif sys.argv[1] == "plotFRIndNrns":
         plotFRIndNrns(*sys.argv[2:])
-    if sys.argv[1] == "plotSpikeTimes":
+    elif sys.argv[1] == "plotSpikeTimes":
         plotSpikeTimes(*sys.argv[2:])
-    if sys.argv[1] == "plotLaterFRVsSpontFR":
+    elif sys.argv[1] == "plotLaterFRVsSpontFR":
         plotInhFRVsSpontFR(*sys.argv[2:])
-    if sys.argv[1] == "plotFRRelative2SpontFR":
+    elif sys.argv[1] == "plotFRRelative2SpontFR":
         plotFRRelative2SpontFR(*sys.argv[2:])
-
+    else:
+        print("Unknown usage! Please use as\n"
+              "python {currFile} save <input excel file> " 
+              "<output data file>  or \n" 
+              "python {currFile} plotFRFvNE <input Data excel file> " 
+              "<output Base> or\n" 
+              "python {currFile} plotFRIndNrns <input Data excel file> " 
+              "<output Base> or\n" 
+              "python {currFile} plotSpikeTimes <input Data excel file> " 
+              "<output Base> or \n" 
+              "python {currFile} plotLaterFRVsSpontFR <input Data excel file> " 
+              "<output Directory> or \n" 
+              "python {currFile} plotFRRelative2SpontFR <input Data excel file>" 
+              "<output Base>".format(currFile=sys.argv[0])
+              )
 
 
 
