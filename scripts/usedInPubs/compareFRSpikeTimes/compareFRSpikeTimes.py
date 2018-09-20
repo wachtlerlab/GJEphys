@@ -508,6 +508,46 @@ def plotFRRelative2SpontFR(dataXL, outBase):
     fig.savefig("{}_FRRelative2spontFR.png".format(outBase), dpi=150)
 
 
+def plotRelativeInhibition(dataXL, outBase):
+    """
+    This function calculated relative inhibition as the ratio of firing rates during inhibition and spontaneous activity
+    for every response and compares the distribution between foragers and newly emerged adults.
+    :param dataXL: string, path of the excel file generated using the function 'saveData' above.
+    :param outBase: string, the generated plot will be saved to the file "<outBase>_spikeTimes.png"
+    :return:
+    """
+
+    sns.set(style="darkgrid", rc=mplPars)
+
+    dataDF = pd.read_excel(dataXL)
+    dataDFPositiveSpont = dataDF[dataDF[spikeFRSpikeTimesFNs["spontFR3"]] > 0]
+    inhFR = dataDFPositiveSpont[spikeFRSpikeTimesFNs["laterFR"]]
+    spontFR3 = dataDFPositiveSpont[spikeFRSpikeTimesFNs["spontFR3"]]
+    dataDFPositiveSpont["relativeInhibition"] = 1 - (inhFR / spontFR3)
+    dataDFPositiveSpont.loc[:, "temp"] = 0
+
+
+    foragerData = dataDFPositiveSpont.loc[dataDFPositiveSpont[mdFN["laborState"]] == "Forager", "relativeInhibition"]
+    neData = dataDFPositiveSpont.loc[dataDFPositiveSpont[mdFN["laborState"]] == "Newly Emerged", "relativeInhibition"]
+
+    t, pVal = ttest_ind(foragerData, neData, equal_var=False)
+    print("ForagerMean={}, ForagerStd={}\nneMean={}, neStd={}\npVal={}".format(foragerData.mean(), foragerData.std(),
+                                                                               neData.mean(), neData.std(), pVal))
+
+    fig, ax = plt.subplots(figsize=(7, 5.6))
+
+    sns.violinplot(x="relativeInhibition", y="temp", data=dataDFPositiveSpont,
+                   hue="Labor State", split=True, scale="area",
+                   inner="quartile", palette=["r", "b"], hue_order=["Newly Emerged", "Forager"], ax=ax, orient='h',
+                   bw=0.001)
+    ax.set_yticklabels([])
+    ax.set_ylabel("Relative frequency\n of occurance")
+    ax.set_xlabel("Relative Inhibtion")
+    ax.legend(ncol=2, loc="best")
+    fig.tight_layout()
+    fig.savefig("{}.png".format(outBase), dpi=300)
+
+
 
 if __name__ == "__main__":
 
@@ -523,6 +563,8 @@ if __name__ == "__main__":
                                "python {currFile} plotLaterFRVsSpontFR <input Data excel file> " \
                                "<output Directory> or \n" \
                                "python {currFile} plotFRRelative2SpontFR <input Data excel file>" \
+                               "<output Base>or \n" \
+                               "python {currFile} plotRelativeInhibition <input Data excel file>" \
                                "<output Base>".format(currFile=sys.argv[0])
 
     if sys.argv[1] == "save":
@@ -537,6 +579,8 @@ if __name__ == "__main__":
         plotInhFRVsSpontFR(*sys.argv[2:])
     elif sys.argv[1] == "plotFRRelative2SpontFR":
         plotFRRelative2SpontFR(*sys.argv[2:])
+    elif sys.argv[1] == "plotRelativeInhibition":
+        plotRelativeInhibition(*sys.argv[2:])
     else:
         print("Unknown usage! Please use as\n"
               "python {currFile} save <input excel file> " 
@@ -550,8 +594,10 @@ if __name__ == "__main__":
               "python {currFile} plotLaterFRVsSpontFR <input Data excel file> " 
               "<output Directory> or \n" 
               "python {currFile} plotFRRelative2SpontFR <input Data excel file>" 
+              "<output Base>or \n"
+              "python {currFile} plotRelativeInhibition <input Data excel file>"
               "<output Base>".format(currFile=sys.argv[0])
-              )
+            )
 
 
 
