@@ -178,10 +178,12 @@ def plotFRTSKDE(dataXL, outBase):
     if nLS == 1:
         palette = ["b"]
     elif nLS == 2:
-        palette = ["b", "r"]
+        palette = ["r", "b"]
     else:
         palette = sns.color_palette("RdYlBu")
-    for lsInd,  (ls, lsDF) in enumerate(dataDF.groupby(mdFN["laborState"])):
+
+    dataDF.sort_values(by=mdFN["laborState"], axis="index", ascending=False, inplace=True)
+    for lsInd,  (ls, lsDF) in enumerate(dataDF.groupby(mdFN["laborState"], sort=False)):
         spikeData = lsDF
         spikeTimes = spikeData["Spike Time (s)"]
         trialExp = spikeData.apply(lambda x: "{}{}".format(x[mdFN["expID"]], x[mdFN["trialName"]]), axis=1)
