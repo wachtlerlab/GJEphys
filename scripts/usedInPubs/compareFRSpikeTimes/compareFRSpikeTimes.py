@@ -22,7 +22,7 @@ import matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
-from GJEphys.matplotlibRCParams import mplPars
+from GJEphys.matplotlibRCParams import mplPars, darkTicksPars
 from scipy.stats import ttest_ind, linregress, t
 import os
 import shutil
@@ -118,7 +118,8 @@ def plotFRFVsNE(dataXL, outBase):
     FRDataStacked.rename(columns={0: "Firing Rate (spikes/s)",
                                   "level_1": "Interval"}, inplace=True)
 
-    sns.set(style="darkgrid", rc=mplPars)
+    # hybridPars = dict(mplPars.items() + darkTicksPars.items())
+    sns.set(style="whitegrid", rc=mplPars)
 
     fig, ax = plt.subplots(figsize=(7, 5.6))
 
@@ -269,7 +270,7 @@ def plotSpikeTimes(dataXL, outBase):
     spikeTimesDataStacked.rename(columns={0: "Spike Time (ms)",
                                   "level_1": "Interval"}, inplace=True)
 
-    sns.set(style="darkgrid", rc=mplPars)
+    sns.set(style="whitegrid", rc=mplPars)
 
     fig, ax = plt.subplots(figsize=(7, 5.6))
 
@@ -375,6 +376,10 @@ def plotInhFRVsSpontFR(dataXL, outDir):
     # # allFig.tight_layout()
     # allFig.savefig(os.path.join(outDir, "allExps_zoomed.png"), dpi=300)
 
+    mplPars["legend.frameon"] = True
+    mplPars["legend.framealpha"] = 1
+    sns.set(style="whitegrid", rc=mplPars)
+
     fvneFig, fvneAx = plt.subplots(figsize=(7, 5.6))
     fvneFigMeans, fvneAxMeans = plt.subplots(figsize=(7, 5.6))
 
@@ -436,10 +441,10 @@ def plotInhFRVsSpontFR(dataXL, outDir):
 
     fvneAxMeans.plot((0, 10), (0, 10), 'k--')
 
-    fvneAxMeans.legend((fLegendHandle, neLegendHandle),
-                  ("Forager,\nslope={:0.3g}".format(fLRResMeans[0]),
-                   "Newly\nEmerged,\nslope={:0.3g}".format(neLRResMeans[0])),
-                  loc="best")
+    fvneAxMeans.legend((neLegendHandle, fLegendHandle),
+                       ("Newly\nEmerged,\nslope={:0.3g}".format(neLRResMeans[0]),
+                       "Forager,\nslope={:0.3g}".format(fLRResMeans[0])),
+                       loc="best")
     fvneAxMeans.set_aspect("equal", adjustable="datalim")
     fvneAxMeans.set_xlim(0, 22)
     fvneFigMeans.tight_layout()
@@ -513,11 +518,11 @@ def plotRelativeInhibition(dataXL, outBase):
     This function calculated relative inhibition as the ratio of firing rates during inhibition and spontaneous activity
     for every response and compares the distribution between foragers and newly emerged adults.
     :param dataXL: string, path of the excel file generated using the function 'saveData' above.
-    :param outBase: string, the generated plot will be saved to the file "<outBase>_spikeTimes.png"
+    :param outBase: string, the generated plot will be saved to the file "<outBase>.png"
     :return:
     """
 
-    sns.set(style="darkgrid", rc=mplPars)
+    sns.set(style="whitegrid", rc=mplPars)
 
     dataDF = pd.read_excel(dataXL)
     dataDFPositiveSpont = dataDF[dataDF[spikeFRSpikeTimesFNs["spontFR3"]] > 0]
