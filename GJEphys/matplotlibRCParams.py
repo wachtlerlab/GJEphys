@@ -24,6 +24,20 @@ mplPars = {'text.usetex': True,
            'text.latex.preamble': r'\usepackage{cmbright}'
            }
 
+darkTicksPars = {
+    'axes.grid': False,
+    'axes.spines.bottom': True,
+    'axes.spines.left': True,
+    'axes.spines.right': True,
+    'axes.spines.top': True,
+    'xtick.direction': 'out',
+    'ytick.direction': 'out',
+    'xtick.color': 'black',
+    'ytick.color': 'black',
+    'xtick.major.size': 6,
+    'ytick.major.size': 6
+}
+
 pts = np.linspace(0, np.pi * 2, 24)
 circ = np.c_[np.sin(pts) / 2, -np.cos(pts) / 2]
 vert = np.r_[circ, circ[::-1] * .7]
