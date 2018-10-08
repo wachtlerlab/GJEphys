@@ -124,7 +124,8 @@ def plotFRFVsNE(dataXL, outBase):
     fig, ax = plt.subplots(figsize=(7, 5.6))
 
     sns.violinplot(hue=mdFN['laborState'], y="Firing Rate (spikes/s)", x="Interval",
-                data=FRDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'], palette=["r", "b"],
+                data=FRDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'],
+                   palette=[(1, 0, 0, 1), (0, 0, 1, 1)],
                 order=FRColKeys, split=True, scale="area", inner=None, cut=0, linewidth=0, scale_hue=False)
 
     sns.pointplot(hue=mdFN['laborState'], y="Firing Rate (spikes/s)", x="Interval",
@@ -135,17 +136,18 @@ def plotFRFVsNE(dataXL, outBase):
         t, pVal = ttest_ind(s["Forager"], s["Newly Emerged"], equal_var=False)
 
 
-        col = 'k'
+        col = (0, 0, 0, 1)
         if pVal < 0.05:
-            col = 'g'
+            col = (0, 0.5, 0, 1)
 
         ax.text(colInd, -5, "{:1.1e}".format(pVal), fontdict={'color': col}, fontsize=plt.rcParams['xtick.labelsize'],
                 horizontalalignment='center', verticalalignment='center')
 
     # ax.set_xticklabels(["Spontaneous\nActivity (3s)", "Pre-Onset\nActivity (50ms)", "On-phasic\nResponse (75ms)",
     #                     "Inhibitory\nResponse (925ms)", "Rebound\nResponse (75ms)"], rotation=45)
-    ax.set_xticklabels(["Spontaneous\nActivity (3s)", "On-phasic\nResponse (75ms)",
-                        "Inhibitory\nResponse (925ms)", "Rebound\nResponse (75ms)"], rotation=45)
+    ax.set_xticklabels(["Spontaneous\nActivity\n(3s)", "On-phasic\nResponse\n(75ms)",
+                        "Inhibitory\nResponse\n(925ms)", "Rebound\nResponse\n(75ms)"],
+                       rotation=60, va="top", ha="center")
     ax.set_ylim(-10, 80)
     ax.set_xlabel("")
 
