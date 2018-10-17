@@ -380,6 +380,7 @@ def plotInhFRVsSpontFR(dataXL, outDir):
 
     mplPars["legend.frameon"] = True
     mplPars["legend.framealpha"] = 1
+    mplPars["legend.fontsize"] = 18
     sns.set(style="whitegrid", rc=mplPars)
 
     fvneFig, fvneAx = plt.subplots(figsize=(7, 5.6))
@@ -400,11 +401,11 @@ def plotInhFRVsSpontFR(dataXL, outDir):
     foragerData = dataDF.loc[lambda x: x[mdFN["laborState"]] == "Forager", :]
 
     fLegendHandle, fLRRes = add_regression_plot(foragerData, y=spikeFRSpikeTimesFNs["spontFR3"],
-                                        x=spikeFRSpikeTimesFNs["laterFR"], color='b', ax1=fvneAx)
+                                        x=spikeFRSpikeTimesFNs["laterFR"], color=(0, 0, 1, 1), ax1=fvneAx)
 
     neData = dataDF.loc[lambda x: x[mdFN["laborState"]] == "Newly Emerged", :]
     neLegendHandle, neLRRes = add_regression_plot(neData, y=spikeFRSpikeTimesFNs["spontFR3"],
-                                        x=spikeFRSpikeTimesFNs["laterFR"], color='r', ax1=fvneAx)
+                                        x=spikeFRSpikeTimesFNs["laterFR"], color=(1, 0, 0, 1), ax1=fvneAx)
 
     fvneAx.set_xlabel("FR during Sustained \n Response (75 to 1000ms)")
     fvneAx.set_ylabel("FR during Spontaneous \n Response (-3000 to 0ms)")
@@ -422,10 +423,10 @@ def plotInhFRVsSpontFR(dataXL, outDir):
     foragerDataMeans = foragerData.groupby(mdFN["expID"]).mean()
     neDataMeans = neData.groupby(mdFN["expID"]).mean()
     fLegendHandle, fLRResMeans = add_regression_plot(foragerDataMeans, y=spikeFRSpikeTimesFNs["spontFR3"],
-                                                x=spikeFRSpikeTimesFNs["laterFR"], color='b', ax1=fvneAxMeans)
+                                                x=spikeFRSpikeTimesFNs["laterFR"], color=(0, 0, 1, 1), ax1=fvneAxMeans)
 
     neLegendHandle, neLRResMeans = add_regression_plot(neDataMeans, y=spikeFRSpikeTimesFNs["spontFR3"],
-                                                  x=spikeFRSpikeTimesFNs["laterFR"], color='r', ax1=fvneAxMeans)
+                                                  x=spikeFRSpikeTimesFNs["laterFR"], color=(1, 0, 0, 1), ax1=fvneAxMeans)
     # Ref: https://stats.stackexchange.com/questions/93540/testing-equality-of-coefficients-from-two-different-regressions#99536
     slopeComparisonStat = (fLRResMeans[0] - neLRResMeans[0]) / (np.linalg.norm([fLRResMeans[4], neLRResMeans[4]]))
     nForagerMeans = foragerDataMeans.shape[0]
@@ -443,12 +444,15 @@ def plotInhFRVsSpontFR(dataXL, outDir):
 
     fvneAxMeans.plot((0, 10), (0, 10), 'k--')
 
+    fvneAxMeans.set_xlim(0, 22)
+    fvneAxMeans.set_ylim(0, 22)
+
     fvneAxMeans.legend((neLegendHandle, fLegendHandle),
                        ("Newly\nEmerged,\nslope={:0.3g}".format(neLRResMeans[0]),
                        "Forager,\nslope={:0.3g}".format(fLRResMeans[0])),
                        loc="best")
-    fvneAxMeans.set_aspect("equal", adjustable="datalim")
-    fvneAxMeans.set_xlim(0, 22)
+
+    # fvneAxMeans.set_aspect("equal")
     fvneFigMeans.tight_layout()
     fvneFigMeans.savefig(os.path.join(outDir, "allExpsFVsNE_means.png"), dpi=300)
 
