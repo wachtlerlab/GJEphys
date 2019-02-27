@@ -22,14 +22,33 @@ import matplotlib as mpl
 mpl.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
-from GJEphys.matplotlibRCParams import mplPars, darkTicksPars
-from scipy.stats import ttest_ind, linregress, t
+from GJEphys.matplotlibRCParams import mplPars, darkTicksPars, openCircleMarker
+from GJEphys.pandasFuncs import dfInterHueFunc
+from scipy.stats import ttest_ind, linregress, t, levene, shapiro, kruskal, mannwhitneyu
 import os
 import shutil
 import warnings
 warnings.filterwarnings(action='once')
 
 
+def getTransformFunction(transform):
+    """
+    Factory for mapping transform names to functions
+    :param transform: string or None, One of the following:
+                           1. "log" : Applies log (base 10) tranform to the data before conducting Shapiro-Wilk test
+                           2. None : No transform is applied
+    :return: function with one iterable argument.
+    """
+
+    if transform is None:
+        return lambda x: x
+    elif transform == "log":
+        def tempF(data):
+            dataNP = np.array(data)
+            return np.log10(dataNP + 0.01 * dataNP[dataNP > 0].min())
+        return tempF
+    else:
+        raise(ValueError("Unknown transform specified!"))
 
 def saveData(inputXL, dataXL):
     '''
@@ -133,8 +152,8 @@ def plotFRFVsNE(dataXL, outBase):
                   markers="_", dodge=True, ci=None, size=30)
 
     for colInd, (col, s) in enumerate(FRData.iteritems()):
-        t, pVal = ttest_ind(s["Forager"], s["Newly Emerged"], equal_var=False)
-
+        # t, pVal = ttest_ind(s["Forager"], s["Newly Emerged"], equal_var=False)
+        t, pVal = mannwhitneyu(s["Forager"], s["Newly Emerged"])
 
         col = (0, 0, 0, 1)
         if pVal < 0.05:
@@ -207,10 +226,14 @@ def plotFRIndNrns(dataXL, outBase):
         elif lsUnique[0] == "Newly Emerged":
             expIDColorMap[expID] = NEColorMap.pop(0)
 
-
+    allDataExpInd = dataDF.set_index(mdFN["expID"])
 
     for expID, expIDDF in FRDataStacked.groupby(mdFN["expID"]):
         fig1, ax1 = plt.subplots(figsize=(7, 5.6))
+
+        sns.swarmplot(data=expIDDF, x="Interval", y="Firing Rate (spikes/s)",
+                      color="k", marker=openCircleMarker,
+                      ax=ax1)
 
         sns.pointplot(data=expIDDF, x="Interval", y="Firing Rate (spikes/s)", ci="sd",
                    color=expIDColorMap[expID],
@@ -218,15 +241,9 @@ def plotFRIndNrns(dataXL, outBase):
         ax1.set_xticklabels(ax1.get_xticklabels(), rotation=90)
         ax1.set_ylim(-10, 100)
         ax1.set_xlabel("")
-        ax1.set_title(expID)
+        ax1.set_title("{expID}({nSamples})".format(expID=expID, nSamples=allDataExpInd.loc[expID, :].shape[0]))
         fig1.tight_layout()
         fig1.savefig("{}_indExpIDFR_{}.png".format(outBase, expID), dpi=300)
-
-
-
-
-
-
 
     fig, ax = plt.subplots(figsize=(7, 5.6))
 
@@ -277,7 +294,8 @@ def plotSpikeTimes(dataXL, outBase):
     fig, ax = plt.subplots(figsize=(7, 5.6))
 
     sns.violinplot(hue=mdFN['laborState'], y="Spike Time (ms)", x="Interval",
-                data=spikeTimesDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'], palette=["r", "b"],
+                data=spikeTimesDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'],
+                palette=[[1, 0, 0, 1], [0, 0, 1, 1]],
                 order=spikeTimesCols, split=True, scale="area", inner=None, cut=0, linewidth=0, scale_hue=False)
 
     sns.pointplot(hue=mdFN['laborState'], y="Spike Time (ms)", x="Interval",
@@ -285,7 +303,9 @@ def plotSpikeTimes(dataXL, outBase):
                   markers="_", dodge=True, ci=None, size=30)
 
     for colInd, (col, s) in enumerate(spikeTimesData.iteritems()):
-        t, pVal = ttest_ind(s["Forager"], s["Newly Emerged"], equal_var=False, nan_policy='omit')
+        # t, pVal = ttest_ind(s["Forager"], s["Newly Emerged"], equal_var=False, nan_policy='omit')
+        t, pVal = mannwhitneyu([x for x in s["Forager"] if not np.isnan(x)],
+                               [x for x in s["Newly Emerged"] if not np.isnan(x)])
         col = 'k'
         if pVal < 0.05:
             col = 'g'
@@ -559,10 +579,95 @@ def plotRelativeInhibition(dataXL, outBase):
     fig.savefig("{}.png".format(outBase), dpi=300)
 
 
+def LeveneTest_FR(dataXL):
+    """
+    Runs the Levene test for homoscedasticity for FRs in all activity intervals
+    :param dataXL: string, path of the excel file generated using the function 'saveData' above.
+    :return: None
+    """
+
+    dataDF = pd.read_excel(dataXL)
+    FRColKeys = ["spontFR3", "beforeOnsetFR", "initFR", "laterFR", "reboundFR", "afterReboundFR"]
+    FRCols = [spikeFRSpikeTimesFNs[x] for x in FRColKeys]
+    resDF = dfInterHueFunc(data=dataDF, pars=FRCols, hue=mdFN["laborState"],
+                           func=levene, outLabels=["test statistic", "p-value"])
+    print(resDF)
+
+def LeveneTest_spikeTimes(dataXL):
+    """
+    Runs the Levene test for homoscedasticity for FRs in all activity intervals
+    :param dataXL: string, path of the excel file generated using the function 'saveData' above.
+    :return: None
+    """
+
+    dataDF = pd.read_excel(dataXL)
+    spikeTimesColKeys = ["firstSpikeLatency", "secondSpikeBISI",
+                         "thirdSpikeBISI", "fourthSpikeBISI"]
+    spikeTimesCols = [spikeFRSpikeTimesFNs[x] for x in spikeTimesColKeys]
+    resDF = dfInterHueFunc(data=dataDF, pars=spikeTimesCols, hue=mdFN["laborState"],
+                           func=levene, outLabels=["test statistic", "p-value"], nan_policy="omit")
+    print(resDF)
+
+
+def ShapiroTest_FR(dataXL, transform=None):
+    """
+    Runs the Shapiro-Wilk test for normality for FRs in all activity intervals, separately for each labor state
+    :param dataXL: string, path of the excel file generated using the function 'saveData' above.
+    :param transform: string or None, see documentation of the function getTransformFunction
+    :return: None
+    """
+
+    transformFunction = getTransformFunction(transform)
+    dataDF = pd.read_excel(dataXL)
+    FRColKeys = ["spontFR3", "beforeOnsetFR", "initFR", "laterFR", "reboundFR", "afterReboundFR"]
+    FRCols = [spikeFRSpikeTimesFNs[x] for x in FRColKeys]
+    resDF = pd.DataFrame()
+    for ls, lsDF in dataDF.groupby(mdFN["laborState"]):
+        for FRCol in FRCols:
+            data = lsDF[FRCol].values
+            transformedData = transformFunction(data)
+            stat, pVal = shapiro(transformedData)
+            tempS = pd.Series()
+            tempS["P-Value"], tempS["Statistic"] = pVal, stat
+            tempS[mdFN["laborState"]], tempS["Interval"] = ls, FRCol
+            resDF = resDF.append(tempS, ignore_index=True)
+
+    resDF.set_index(mdFN["laborState"], inplace=True)
+    for ls in dataDF[mdFN["laborState"]].unique():
+        print(resDF.loc[ls, :])
+
+def ShapiroTest_SpikeTimes(dataXL, transform=None):
+    """
+    Runs the Shapiro-Wilk test for normality for FRs in all activity intervals, separately for each labor state
+    :param dataXL: string, path of the excel file generated using the function 'saveData' above.
+    :param transform: string or None, see documentation of the function getTransformFunction
+    :return: None
+    """
+
+    transformFunction = getTransformFunction(transform)
+    dataDF = pd.read_excel(dataXL)
+    spikeTimesColKeys = ["firstSpikeLatency", "secondSpikeBISI",
+                         "thirdSpikeBISI", "fourthSpikeBISI"]
+    spikeTimesCols = [spikeFRSpikeTimesFNs[x] for x in spikeTimesColKeys]
+    resDF = pd.DataFrame()
+    for ls, lsDF in dataDF.groupby(mdFN["laborState"]):
+        for spikeTimeCol in spikeTimesCols:
+            data = lsDF[spikeTimeCol].values
+            transformedData = transformFunction(data)
+            stat, pVal = shapiro([x for x in transformedData if (not np.isnan(x)) and (x < 20)])
+            tempS = pd.Series()
+            tempS["P-Value"], tempS["Statistic"] = pVal, stat
+            tempS[mdFN["laborState"]], tempS["Spike Time Feature"] = ls, spikeTimeCol
+            resDF = resDF.append(tempS, ignore_index=True)
+
+    resDF.set_index(mdFN["laborState"], inplace=True)
+    for ls in dataDF[mdFN["laborState"]].unique():
+        print(resDF.loc[ls, :])
+
 
 if __name__ == "__main__":
 
-    assert len(sys.argv) == 4, "Improper Usage! Please use as\n" \
+    assert len(sys.argv) in [3, 4], "Improper Usage! Please use as\n" \
                                "python {currFile} save <input excel file> " \
                                "<output data file>  or \n" \
                                "python {currFile} plotFRFvNE <input Data excel file> " \
@@ -574,9 +679,14 @@ if __name__ == "__main__":
                                "python {currFile} plotLaterFRVsSpontFR <input Data excel file> " \
                                "<output Directory> or \n" \
                                "python {currFile} plotFRRelative2SpontFR <input Data excel file>" \
-                               "<output Base>or \n" \
+                               "<output Base> or \n" \
                                "python {currFile} plotRelativeInhibition <input Data excel file>" \
-                               "<output Base>".format(currFile=sys.argv[0])
+                               "<output Base> or \n" \
+                               "python {currFile} LeveneFR <input Data excel file> or\n" \
+                               "python {currFile} LeveneSpikeTimes <input Data excel file> or\n" \
+                               "python {currFile} ShapiroFR <input Data excel file> <transformation>(optional) or\n" \
+                               "python {currFile} ShapiroST <input Data excel file> <transformation>(optional)" \
+                               "".format(currFile=sys.argv[0])
 
     if sys.argv[1] == "save":
         saveData(*sys.argv[2:])
@@ -592,6 +702,14 @@ if __name__ == "__main__":
         plotFRRelative2SpontFR(*sys.argv[2:])
     elif sys.argv[1] == "plotRelativeInhibition":
         plotRelativeInhibition(*sys.argv[2:])
+    elif sys.argv[1] == "LeveneFR":
+        LeveneTest_FR(*sys.argv[2:])
+    elif sys.argv[1] == "LeveneSpikeTimes":
+        LeveneTest_spikeTimes(*sys.argv[2:])
+    elif sys.argv[1] == "ShapiroFR":
+        ShapiroTest_FR(*sys.argv[2:])
+    elif sys.argv[1] == "ShapiroST":
+        ShapiroTest_SpikeTimes(*sys.argv[2:])
     else:
         print("Unknown usage! Please use as\n"
               "python {currFile} save <input excel file> " 
@@ -599,15 +717,20 @@ if __name__ == "__main__":
               "python {currFile} plotFRFvNE <input Data excel file> " 
               "<output Base> or\n" 
               "python {currFile} plotFRIndNrns <input Data excel file> " 
-              "<output Base> or\n" 
+              "<output Base> or\n"
               "python {currFile} plotSpikeTimes <input Data excel file> " 
               "<output Base> or \n" 
               "python {currFile} plotLaterFRVsSpontFR <input Data excel file> " 
               "<output Directory> or \n" 
               "python {currFile} plotFRRelative2SpontFR <input Data excel file>" 
-              "<output Base>or \n"
+              "<output Base> or \n"
               "python {currFile} plotRelativeInhibition <input Data excel file>"
-              "<output Base>".format(currFile=sys.argv[0])
+              "<output Base> or \n" 
+              "python {currFile} LeveneFR <input Data excel file> or \n"
+              "python {currFile} LeveneSpikeTimes <input Data excel file> or \n"
+              "python {currFile} ShapiroFR <input Data excel file> <transformation>(optional) or\n" 
+              "python {currFile} ShapiroST <input Data excel file> <transformation>(optional)" 
+              "".format(currFile=sys.argv[0])
             )
 
 

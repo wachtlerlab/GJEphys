@@ -1,5 +1,6 @@
 import numpy as np
-
+import rpy2
+import rpy2.robjects
 
 def getWelchDF(var1, var2, N1, N2, df1, df2):
     """
@@ -23,3 +24,16 @@ def getWelchDF(var1, var2, N1, N2, df1, df2):
         return df
     else:
         return int(round(df))
+
+# shamelessly stolen from https://github.com/scipy/scipy/pull/4933#issuecomment-292314817
+def r_mannwhitneyu(sample1, sample2, exact=True, alternative="g"):
+    sample1 = "c({})".format(str(list(sample1))[1:-1])
+    sample2 = "c({})".format(str(list(sample2))[1:-1])
+    rpy2.robjects.R()("""wres <- wilcox.test({}, {}, alternative="{}"{});
+                       rm(sample1);
+                       rm(sample2);""".format(sample1, sample2, alternative,
+                                              ", exact=TRUE" if exact else ""))
+    wres = rpy2.robjects.r['wres']
+    uval = wres[0][0]
+    pval = wres[2][0]
+    return uval, pval
