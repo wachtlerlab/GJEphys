@@ -3,6 +3,7 @@ This file contains functions for transforming pandas.DataFrames in certain speci
 '''
 
 import pandas as pd
+import numpy as np
 
 
 def dfCorr(data, x, ys, func, outLabels, hue=None):
@@ -52,7 +53,25 @@ def getLevelUniques(df, level):
     return df.index.get_level_values(level).unique()
 
 
-def dfInterHueFunc(data, pars, hue, func, outLabels, kwargsDict={}):
+def nan_policy_func_factory(nan_policy):
+    """
+    Factory for mapping nan_policy strings to functions.
+    :param nan_policy: str, either "propagate", "raise", "omit"
+    :return: function
+    """
+
+    if nan_policy == "propagate":
+        return lambda x: x
+    elif nan_policy == "raise":
+        def tempF(data):
+            raise(ValueError("Nans encountered!"))
+        return tempF
+    elif nan_policy == "omit":
+        def tempF(data):
+            return [x for x in data if not np.isnan(x)]
+        return tempF
+
+def dfInterHueFunc(data, pars, hue, func, outLabels, nan_policy="propagate", kwargsDict={}):
     '''
     Splits each column named in pars into series' depending on hue values. Applies func with these series as argument.
     Compiles and returns the results as a dataframe with pars as index names and outLabels as column names.
@@ -64,6 +83,8 @@ def dfInterHueFunc(data, pars, hue, func, outLabels, kwargsDict={}):
     :return: pandas dataframe
     '''
 
+    nan_policy_function = nan_policy_func_factory(nan_policy)
+
     hueGroupedData = data.groupby(hue)
     hueGroupedDFs = {hue: hueDF for hue, hueDF in hueGroupedData}
 
@@ -71,7 +92,8 @@ def dfInterHueFunc(data, pars, hue, func, outLabels, kwargsDict={}):
 
     for par in pars:
 
-        df = pd.DataFrame({'{}'.format(par): func(*[hueDF[par] for hueDF in hueGroupedDFs.itervalues()], **kwargsDict)},
+        df = pd.DataFrame({'{}'.format(par): func(*[nan_policy_function(hueDF[par].values)
+                                                    for hueDF in hueGroupedDFs.itervalues()], **kwargsDict)},
                           index=outLabels).T
         allDFs.append(df)
 
