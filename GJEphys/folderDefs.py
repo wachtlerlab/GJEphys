@@ -12,7 +12,7 @@ A folder to store all data. All input data, intermediate processed data and outp
 
 (SMR files containing raw electrophysiological traces need to be manually placed in "spike2Path" below)
 '''
-homeFolder = "/home/aj/"
+homeFolder = os.path.expanduser("~")
 
 '''
 Path to the excel file containing all metadata
