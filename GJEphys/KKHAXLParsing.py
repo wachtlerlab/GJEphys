@@ -94,8 +94,10 @@ def parseMetaDataFile(excelFile, excelSheet, smrDir):
     problem = np.logical_not(smrsPresent)
 
     if any(problem):
-        logging.warning('These experiments were marked uploaded but were not found in {}:\n{}\nIGNORING THESE'
-                        .format(smrDir, [x for x, y in zip(metaDF.index, problem) if y]))
+        logging.warning("Some experiments were marked uploaded in {} but were not found in {}. "
+                        "Ignoring them!".format(excelFile, smrDir))
+        logging.debug('These experiments were marked uploaded but were not found in {}:\n{}\n'
+                      'IGNORING THESE'.format(smrDir, [x for x, y in zip(metaDF.index, problem) if y]))
 
     metaDFFiltered = metaDF[smrsPresent]
 
