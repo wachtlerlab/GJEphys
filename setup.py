@@ -20,6 +20,6 @@ setup(
                       "requests>=2.14.2",
                       "traceback2>=1.4"],
 
-    python_requires="==2.7"
+    python_requires=">=2.7, <3"
 
     )

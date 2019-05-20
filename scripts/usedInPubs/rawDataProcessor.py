@@ -36,27 +36,32 @@ import sys
 # mdDF = parseMetaDataFile(excel, excelSheet, spike2Path)
 # expNames = map(str, mdDF.index)
 # **********************************************************************************************************************
-# expNames = ["130605-1LY"]
+expNames = [
+            "130517-1Al",
+            "130318-3LY",
+            "130704-1LY",
+            "130425-3Al"
+           ]
 # **********************************************************************************************************************
-from GJEphys.KKHAXLParsing import parseMetaDataFile, getExpIDsByCategory
-from GJEphys.folderDefs import excel, excelSheet, spike2Path
-
-categories = [
-                # 'DL-Int-1',
-                # 'DL-Int-2',
-                'JO neuron',
-                # 'MB neurons',
-                # 'BilateralN',
-                # 'DescendingN',
-                # 'AscendingN',
-                # 'Bilateral Descending N',
-                # 'JO terminal local neuron'
-            ]
-
-expIDsByCat = getExpIDsByCategory(excel, excelSheet, categories, spike2Path)
-expNames = []
-for cat, catExpNames in expIDsByCat.iteritems():
-    expNames += catExpNames
+# from GJEphys.KKHAXLParsing import parseMetaDataFile, getExpIDsByCategory
+# from GJEphys.folderDefs import excel, excelSheet, spike2Path
+#
+# categories = [
+#                 # 'DL-Int-1',
+#                 # 'DL-Int-2',
+#                 'JO neuron',
+#                 # 'MB neurons',
+#                 # 'BilateralN',
+#                 # 'DescendingN',
+#                 # 'AscendingN',
+#                 # 'Bilateral Descending N',
+#                 # 'JO terminal local neuron'
+#             ]
+#
+# expIDsByCat = getExpIDsByCategory(excel, excelSheet, categories, spike2Path)
+# expNames = []
+# for cat, catExpNames in expIDsByCat.iteritems():
+#     expNames += catExpNames
 # **********************************************************************************************************************
 
 

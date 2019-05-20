@@ -16,28 +16,41 @@ from GJEphys.folderDefs import excel, excelSheet, spike2Path
 
 # **********************************************************************************************************************
 
-from GJEphys.KKHAXLParsing import getExpIDsByCategory
-
-categories = [
-                # 'DL-Int-1',
-                # 'DL-Int-2',
-                'JO neuron',
-                # 'MB neurons',
-                # 'BilateralN',
-                # 'DescendingN',
-                # 'AscendingN',
-                # 'Bilateral Descending N',
-                # 'JO terminal local neuron'
-            ]
-
-expIDsByCat = getExpIDsByCategory(excel, excelSheet, categories, spike2Path)
-expNames = []
-for cat, catExpNames in expIDsByCat.iteritems():
-    expNames += catExpNames
+# from GJEphys.KKHAXLParsing import getExpIDsByCategory
+#
+# categories = [
+#                 # 'DL-Int-1',
+#                 # 'DL-Int-2',
+#                 'JO neuron',
+#                 # 'MB neurons',
+#                 # 'BilateralN',
+#                 # 'DescendingN',
+#                 # 'AscendingN',
+#                 # 'Bilateral Descending N',
+#                 # 'JO terminal local neuron'
+#             ]
+#
+# expIDsByCat = getExpIDsByCategory(excel, excelSheet, categories, spike2Path)
+# expNames = []
+# for cat, catExpNames in expIDsByCat.iteritems():
+#     expNames += catExpNames
 
 # **********************************************************************************************************************
 
-# expNames = ["130313-4Rh"]
+expNames = [
+            "130214-1Rh",
+            # "130430-1Al",
+            # "130607-2Al",
+            # "140917-1Al",
+            # "130415-2Rh",
+            # "130605-1LY",
+            # "130705-1LY"
+
+            # "130517-1Al",
+            # "130318-3LY",
+            # "130704-1LY",
+            # "130425-3Al"
+            ]
 
 # **********************************************************************************************************************
 
