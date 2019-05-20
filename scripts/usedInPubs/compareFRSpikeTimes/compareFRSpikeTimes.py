@@ -148,7 +148,7 @@ def plotFRFVsNE(dataXL, outBase):
                 order=FRColKeys, split=True, scale="area", inner=None, cut=0, linewidth=0, scale_hue=False)
 
     sns.pointplot(hue=mdFN['laborState'], y="Firing Rate (spikes/s)", x="Interval",
-                data=FRDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'], palette=['w', 'w'], join=False,
+                  data=FRDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'], palette=['w', 'w'], join=False, estimator=np.mean,
                   markers="_", dodge=True, ci=None, size=30)
 
     for colInd, (col, s) in enumerate(FRData.iteritems()):
@@ -299,13 +299,14 @@ def plotSpikeTimes(dataXL, outBase):
                 order=spikeTimesCols, split=True, scale="area", inner=None, cut=0, linewidth=0, scale_hue=False)
 
     sns.pointplot(hue=mdFN['laborState'], y="Spike Time (ms)", x="Interval",
-                data=spikeTimesDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'], palette=['w', 'w'], join=False,
+                  data=spikeTimesDataStacked, ax=ax, hue_order=['Newly Emerged', 'Forager'], palette=['w', 'w'], join=False, estimator=np.mean,
                   markers="_", dodge=True, ci=None, size=30)
 
     for colInd, (col, s) in enumerate(spikeTimesData.iteritems()):
         # t, pVal = ttest_ind(s["Forager"], s["Newly Emerged"], equal_var=False, nan_policy='omit')
-        t, pVal = mannwhitneyu([x for x in s["Forager"] if not np.isnan(x)],
-                               [x for x in s["Newly Emerged"] if not np.isnan(x)])
+        fVals = [x for x in s["Forager"] if not np.isnan(x)]
+        neVals = [x for x in s["Newly Emerged"] if not np.isnan(x)]
+        t, pVal = mannwhitneyu(fVals, neVals)
         col = 'k'
         if pVal < 0.05:
             col = 'g'
@@ -313,9 +314,13 @@ def plotSpikeTimes(dataXL, outBase):
         ax.text(colInd, -5, "{:1.1e}".format(pVal), fontdict={'color': col}, fontsize=plt.rcParams['xtick.labelsize'],
                 horizontalalignment='center', verticalalignment='center')
 
+        ax.text(colInd-0.15, 25, "{:.2f}(n={:d})".format(np.mean(neVals), len(neVals)), fontdict={"color": [1, 0, 0, 1]}, fontsize=0.75 * plt.rcParams['xtick.labelsize'], horizontalalignment='center', verticalalignment='bottom', rotation="vertical")
+
+        ax.text(colInd + 0.15, 25, "{:.2f}(n={:d})".format(np.mean(fVals), len(fVals)), fontdict={"color": [0, 0, 1, 1]}, fontsize=0.75 * plt.rcParams['xtick.labelsize'],horizontalalignment='center', verticalalignment='bottom', rotation="vertical")
+
     xtickLabels = [x[:-5] for x in spikeTimesCols]
     ax.set_xticklabels(xtickLabels, rotation=45)
-    ax.set_ylim(-10, 80)
+    ax.set_ylim(-10, 70)
     ax.set_xlabel("")
 
     # l1, = ax.plot((), (), 'rs', label="Newly Emerged")
